@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Font Definitions */
+@font-face {
+  font-family: 'Rebelton';
+  src: url('/fonts/Rebelton-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Stinger Fit';
+  src: url('/fonts/StingerFit-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Global Font Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Rebelton', sans-serif;
+}
+
+body, p, span, div, button, input, textarea, select {
+  font-family: 'Stinger Fit', sans-serif;
+}

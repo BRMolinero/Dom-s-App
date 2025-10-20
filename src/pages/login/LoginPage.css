@@ -1,0 +1,439 @@
+@keyframes shift {
+  0% {
+    background-position: 0% 0%, 100% 100%, 0% 0%;
+  }
+  50% {
+    background-position: 50% 50%, 50% 50%, 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%, 100% 100%, 0% 0%;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(13, 192, 232, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(13, 192, 232, 0.6);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  }
+}
+
+button,
+a,
+img,
+svg,
+h2,
+p {
+  user-select: none;
+  cursor: pointer;
+}
+
+.relative div {
+  user-select: none;
+  cursor: pointer;
+}
+
+.domus-login-container {
+  background: rgba(245, 242, 242, 0.914);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(149, 205, 209, 0.2);
+  box-shadow: 
+    0 25px 50px -12px rgba(39, 65, 129, 0.4),
+    0 0 0 1px rgba(149, 205, 209, 0.1),
+    inset 0 1px 0 rgba(245, 242, 242, 0.1);
+}
+
+.dofon {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: float 6s ease-in-out infinite;
+}
+
+.dofon::before {
+  content: "";
+  background-image: url("/src/assets/dofon.png");
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  z-index: 0;
+  border-radius: 24px;
+  filter: brightness(1.2) contrast(1.1);
+}
+
+.dofon > * {
+  position: relative;
+  z-index: 1;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.logo-container img {
+  width: 200px;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.logo-container img:hover {
+  transform: scale(1.01);
+}
+
+.login-title {
+  color: #274181;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(39, 65, 129, 0.2);
+  letter-spacing: 0.025em;
+}
+
+.input-field {
+  background: rgba(245, 242, 242, 0.8);
+  border: 2px solid rgba(39, 65, 129, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  color: #274181;
+}
+
+.input-field:focus {
+  background: rgba(245, 242, 242, 0.95);
+  border-color: #0DC0E8;
+  box-shadow: 
+    0 0 0 3px rgba(13, 192, 232, 0.2),
+    0 4px 12px rgba(39, 65, 129, 0.15);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.input-field:hover:not(:focus) {
+  background: rgba(245, 242, 242, 0.9);
+  border-color: rgba(39, 65, 129, 0.4);
+}
+
+.input-field::placeholder {
+  color: rgba(39, 65, 129, 0.6);
+}
+
+/* Centrar todos los iconos verticalmente y horizontalmente */
+svg {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Iconos en campos de entrada - Armonía con el texto */
+.relative svg {
+  top: 50% !important;
+  left: 14px !important;
+  transform: translateY(-50%) !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Iconos en botones */
+button svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Iconos de error */
+svg.text-red-500 {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Iconos de loading */
+svg.animate-spin {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Iconos de éxito */
+.success-icon {
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Iconos de las cards principales - DOMUS */
+.domus-page svg {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: auto !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
+}
+
+/* Contenedores de iconos principales - Centrado perfecto */
+.domus-page .w-28 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.domus-page .w-28 svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* Iconos específicos de las cards principales */
+.domus-page .w-16 {
+  width: 64px !important;
+  height: 64px !important;
+}
+
+.domus-page .w-14 {
+  width: 56px !important;
+  height: 56px !important;
+}
+
+.domus-page .w-24 {
+  width: 96px !important;
+  height: 96px !important;
+}
+
+/* Contenedores de iconos pequeños - Centrado perfecto */
+.domus-page .w-20 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.domus-page .w-20 svg,
+.domus-page .w-20 img {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* Iconos de Monitoreo Ambiental - Centrado perfecto */
+.admin-panel .w-16 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.admin-panel .w-16 svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Iconos de Login y Registro - Centrado perfecto */
+.login-page svg,
+.register-page svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Contenedores de iconos en login/registro */
+.login-page .relative,
+.register-page .relative {
+  position: relative !important;
+}
+
+.login-page .relative svg,
+.register-page .relative svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 20px !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.login-button {
+  background: linear-gradient(
+    135deg,
+    #95CDD1 0%,
+    #274181 100%
+  );
+  border: 2px solid #274181;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  color: #F5F2F2;
+  font-weight: 600;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 242, 242, 0.3),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.login-button:hover::before {
+  left: 100%;
+}
+
+.login-button:hover {
+  background: linear-gradient(
+    135deg,
+    #0DC0E8 0%,
+    #1a2d5a 100%
+  );
+  box-shadow: 
+    0 8px 25px rgba(13, 192, 232, 0.4),
+    0 0 0 2px #95CDD1;
+  transform: translateY(-2px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 4px 15px rgba(13, 192, 232, 0.3),
+    0 0 0 2px #95CDD1;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dsadsa span {
+  cursor: pointer !important;
+}
+
+.login-button span {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.login-button svg {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1rem;
+  height: 1rem;
+}
+
+
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.social-link {
+  transition: all 0.3s ease;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.social-link:hover {
+  transform: translateY(-5px) scale(1.1);
+  filter: drop-shadow(0 5px 15px rgba(255, 255, 255, 0.3));
+}
+
+.register-link {
+  color: #274181;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.register-link:hover {
+  color: #0DC0E8;
+  text-shadow: 0 0 10px rgba(13, 192, 232, 0.4);
+}
+
+.form-error {
+  margin-top: -0.25rem;
+  margin-bottom: 0.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(217, 87, 102, 0.1);
+  border: 1px solid rgba(217, 87, 102, 0.3);
+  color: #D95766;
+  font-size: 0.875rem;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(217, 87, 102, 0.15);
+}
+
+/* Mejorar contraste del texto en las cards */
+.domus-login-container label {
+  color: #274181;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.domus-login-container p {
+  color: #274181;
+  font-weight: 500;
+}
+
+.domus-login-container .text-sm {
+  color: rgba(39, 65, 129, 0.8);
+  font-weight: 500;
+}
+
+/* Iconos más visibles */
+.domus-login-container svg {
+  color: #274181;
+}
