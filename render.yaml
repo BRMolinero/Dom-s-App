@@ -30,4 +30,5 @@ services:
 
     domains:
       - domus.humanixtech.com        # opcional, si ya apuntaste el DNS
+      - domus-frontend.onrender.com
 
