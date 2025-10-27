@@ -1,20 +1,21 @@
+
 import axios from "axios";
 import { getAuth } from "./authBridge";
 
-// Configuración de API
-// Si VITE_API_URL está definido, usarlo; sino usar localhost:3000/api por defecto
+// Base URL: apunta al proxy si está VITE_API_URL
 const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const base = apiBaseUrl.replace(/\/+$/, "");
 
 export const api = axios.create({
   baseURL: base,
   timeout: 10000,
-  withCredentials: true,
+  withCredentials: true, // tu proxy ya expone Access-Control-Allow-Credentials
 });
 
-// Utilidad: detectar si la URL es un endpoint de auth
+// No agregar Authorization en estos endpoints de auth:
 function isAuthUrl(url = "") {
-  return /\/auth\/(login|register|refresh|logout)(\/)?$/i.test(url);
+  // añadí "registro" además de "register"
+  return /\/auth\/(login|register|registro|refresh|logout)(\/)?$/i.test(url);
 }
 
 // ---------- Interceptors ----------
@@ -30,7 +31,6 @@ api.interceptors.request.use((config) => {
 
 let refreshingPromise = null;
 
-
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -38,41 +38,28 @@ api.interceptors.response.use(
     const status = response?.status;
     const url = config?.url || "";
 
-    // Si no es 401, ya se reintentó, o es /auth/*, no hacemos refresh.
     if (status !== 401 || config?._retry || isAuthUrl(url)) {
       return Promise.reject(error);
     }
 
-    // Single-flight: una sola promesa de refresh compartida
     if (!refreshingPromise) {
       const { accessToken } = getAuth() || {};
-      
       refreshingPromise = api
         .post("/auth/refresh", {}, {
           withCredentials: true,
           headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
         })
         .then((r) => {
-          const token = r?.data?.accessToken;
+          const token = r?.data?.accessToken || r?.data?.token;
           const { setAccessToken } = getAuth() || {};
           if (token && setAccessToken) setAccessToken(token);
           return token;
         })
-        .catch((e) => {
-          // Si el refresh falla, propagamos el 401 original
-          throw e;
-        })
-        .finally(() => {
-          refreshingPromise = null;
-        });
+        .finally(() => { refreshingPromise = null; });
     }
 
-    // Esperamos el nuevo token y reintentamos la original
     const newAccess = await refreshingPromise;
-    if (!newAccess) {
-      // no hay token nuevo -> rechazamos
-      return Promise.reject(error);
-    }
+    if (!newAccess) return Promise.reject(error);
 
     config._retry = true;
     config.headers = config.headers || {};
