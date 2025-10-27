@@ -1,10 +1,13 @@
 import axios from "axios";
 import { getAuth } from "./authBridge";
 
-const base = (import.meta.env.VITE_API_CLIMA || "").replace(/\/+$/, "");
+// Configuración de API
+// Si VITE_API_URL está definido, usarlo; sino usar localhost:3000/api por defecto
+const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const base = apiBaseUrl.replace(/\/+$/, "");
 
 export const api = axios.create({
-  baseURL: `${base}/api/v1`,
+  baseURL: base,
   timeout: 10000,
   withCredentials: true,
 });
@@ -42,8 +45,13 @@ api.interceptors.response.use(
 
     // Single-flight: una sola promesa de refresh compartida
     if (!refreshingPromise) {
+      const { accessToken } = getAuth() || {};
+      
       refreshingPromise = api
-        .post("/auth/refresh", {}, { withCredentials: true })
+        .post("/auth/refresh", {}, {
+          withCredentials: true,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+        })
         .then((r) => {
           const token = r?.data?.accessToken;
           const { setAccessToken } = getAuth() || {};

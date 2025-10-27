@@ -70,16 +70,29 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
+      console.log("📋 Enviando credenciales...", { email: form.username });
       await login(form);
+      console.log("✅ Login exitoso, redirigiendo...");
       navigate("/", { replace: true });
     } catch (err) {
-      console.error("Login error:", err); 
+      console.error("❌ Login error:", err); 
       const status = err?.response?.status;
-      const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
-      const msg =
-        status === 401 || status === 400
-          ? "Credenciales incorrectas. Revisá usuario y contraseña."
-          : apiMsg || "No pudimos iniciar sesión. Intentá de nuevo.";
+      const apiMsg = err?.response?.data?.mensaje || 
+                     err?.response?.data?.message || 
+                     err?.response?.data?.error ||
+                     err?.message;
+      
+      let msg;
+      if (status === 401 || status === 400) {
+        msg = "Credenciales incorrectas. Revisá email y contraseña.";
+      } else if (status >= 500) {
+        msg = "Error del servidor. Intentá nuevamente en unos momentos.";
+      } else if (status === 0 || !err.response) {
+        msg = "No se pudo conectar al servidor. Verificá que el backend esté ejecutándose.";
+      } else {
+        msg = apiMsg || "No pudimos iniciar sesión. Intentá de nuevo.";
+      }
+      
       setError(msg);
     } finally {
       setLoading(false); 
@@ -105,7 +118,7 @@ export default function LoginPage() {
         ref={cardRef}
         className="domus-login-container z-[50] rounded-2xl p-10 shadow-2xl w-full max-w-md transform transition-transform duration-300 bg-white border-4 border-[#274181] backdrop-blur-sm"
       >
-        <div className="logo-container mb-10">
+        <div className="logo-container mb-12">
           <div className="flex items-center justify-center">
             <img 
               src="/logo domus robotOK.png" 
@@ -121,22 +134,24 @@ export default function LoginPage() {
         </h2>
 
         <form onSubmit={onSubmit} className="space-y-6" noValidate>
-          {/* Username */}
+          {/* Email */}
           <div className="relative" ref={(el) => (inputsRef.current[0] = el)}>
             <label htmlFor="username" className="block text-white font-bold text-sm mb-3">
               
             </label>
             <div className="relative">
-              <FaUser className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                <FaUser className="text-[#274181] text-lg" />
+              </div>
               <input
-                type="text"
+                type="email"
                 id="username"
                 value={form.username}
                 onChange={onChange("username")}
                 required
                 className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
-                placeholder="Usuario"
-                autoComplete="username"
+                placeholder="Email"
+                autoComplete="email"
               />
             </div>
           </div>
@@ -147,7 +162,9 @@ export default function LoginPage() {
             
             </label>
             <div className="relative">
-              <FaLock className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                <FaLock className="text-[#274181] text-lg" />
+              </div>
               <input
                 type="password"
                 id="password"

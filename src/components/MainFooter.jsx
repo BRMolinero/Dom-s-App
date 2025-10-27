@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaRobot } from "react-icons/fa";
 
 // Iconos SVG personalizados para reemplazar Ant Design
@@ -38,18 +39,14 @@ const InstagramIcon = () => (
   </svg>
 );
 
-const XIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
-
 const MainFooter = () => {
+  const navigate = useNavigate();
+  
   const contactInfo = [
     {
       icon: <MailIcon />,
       title: 'Email',
-      content: 'info@domus.com'
+      content: 'info@humanixtech.com'
     },
     {
       icon: <PhoneIcon />,
@@ -59,7 +56,7 @@ const MainFooter = () => {
     {
       icon: <LocationIcon />,
       title: 'Oficina',
-      content: 'Villa María, Córdoba'
+      content: 'Corrientes 1098, Villa Maria, Córdoba'
     }
   ];
 
@@ -133,7 +130,22 @@ const MainFooter = () => {
                         </a>
                       ) : info.title === 'Teléfono' ? (
                         <a 
-                          href={`https://wa.me/5493534128030`}
+                          href="https://wa.me/5493534128030?text=Hola humanix-tech, me interesa conocer más sobre sus soluciones tecnológicas."
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            color: '#0B3C5D',
+                            textDecoration: 'underline',
+                            transition: 'color 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => e.target.style.color = '#00C2C7'}
+                          onMouseLeave={(e) => e.target.style.color = '#0B3C5D'}
+                        >
+                          {info.content}
+                        </a>
+                      ) : info.title === 'Oficina' ? (
+                        <a 
+                          href="https://maps.google.com/?q=Corrientes+1098,+Villa+Maria,+Córdoba"
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ 
@@ -156,54 +168,6 @@ const MainFooter = () => {
             </div>
           </div>
 
-          {/* Legal Column */}
-          <div>
-            <h5 style={{ 
-              color: '#0B3C5D', 
-              marginBottom: 16,
-              fontSize: '1.1rem',
-              fontWeight: 500
-            }}>
-              Información Legal
-            </h5>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button 
-                style={{ 
-                  color: '#4B5563', 
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'color 0.3s ease'
-                }}
-                onClick={() => window.open('#', '_blank')}
-                onMouseEnter={(e) => e.target.style.color = '#00C2C7'}
-                onMouseLeave={(e) => e.target.style.color = '#4B5563'}
-              >
-                Términos y Condiciones
-              </button>
-              <button 
-                style={{ 
-                  color: '#4B5563', 
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'color 0.3s ease'
-                }}
-                onClick={() => window.open('#', '_blank')}
-                onMouseEnter={(e) => e.target.style.color = '#00C2C7'}
-                onMouseLeave={(e) => e.target.style.color = '#4B5563'}
-              >
-                Política de Privacidad
-              </button>
-            </div>
-          </div>
-
           {/* Social Media Column */}
           <div>
             <h5 style={{ 
@@ -215,22 +179,16 @@ const MainFooter = () => {
               Síguenos
             </h5>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <a
-                href="https://linkedin.com/company/domus"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Síguenos en LinkedIn"
+              <div
                 style={{ 
                   color: '#4B5563',
-                  transition: 'color 0.3s ease'
+                  cursor: 'default'
                 }}
-                onMouseEnter={(e) => e.target.style.color = '#00C2C7'}
-                onMouseLeave={(e) => e.target.style.color = '#4B5563'}
               >
                 <LinkedinIcon />
-              </a>
+              </div>
               <a
-                href="https://youtube.com/@domus"
+                href="https://www.youtube.com/channel/UC_2HmvmUtcuCeEOH1KfR8qg"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Síguenos en YouTube"
@@ -244,7 +202,7 @@ const MainFooter = () => {
                 <YoutubeIcon />
               </a>
               <a
-                href="https://instagram.com/domus"
+                href="https://www.instagram.com/domusxhumanix/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Síguenos en Instagram"
@@ -256,20 +214,6 @@ const MainFooter = () => {
                 onMouseLeave={(e) => e.target.style.color = '#4B5563'}
               >
                 <InstagramIcon />
-              </a>
-              <a
-                href="https://twitter.com/domus"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Síguenos en X"
-                style={{ 
-                  color: '#4B5563',
-                  transition: 'color 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.color = '#00C2C7'}
-                onMouseLeave={(e) => e.target.style.color = '#4B5563'}
-              >
-                <XIcon />
               </a>
             </div>
           </div>

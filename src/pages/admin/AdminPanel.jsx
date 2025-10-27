@@ -1,283 +1,251 @@
-import React, { useState, useEffect } from 'react';
-import { 
+import React from 'react';
+import {
   FaTint,
   FaWind,
   FaExclamationTriangle,
   FaThermometerHalf,
   FaLeaf
 } from 'react-icons/fa';
+import LoadingMessage from '../../components/LoadingMessage';
+import { useSensorData } from '../../context/SensorContext';
 
 const AdminPanel = () => {
-  const [sensorData, setSensorData] = useState({
-    temperature: 0,
-    humidity: 0,
-    co: 0, // Monóxido de carbono en ppm
-  });
-  const [loading, setLoading] = useState(true);
+  const {
+    sensorData,
+    lastUpdate,
+    isConnected,
+    error,
+    airQuality,
+    getTemperaturePercentage,
+    getHumidityPercentage,
+    getCOPercentage
+  } = useSensorData();
 
-  // Función para calcular calidad del ambiente
-  const calculateAirQuality = () => {
-    const { temperature, humidity, co } = sensorData;
-    
-    // Factores de calidad (0-100)
-    let tempScore = 100;
-    let humidityScore = 100;
-    let coScore = 100;
-    
-    // Temperatura: óptima entre 18-25°C
-    if (temperature < 18 || temperature > 25) {
-      tempScore = Math.max(0, 100 - Math.abs(temperature - 21.5) * 10);
-    }
-    
-    // Humedad: óptima entre 40-60%
-    if (humidity < 40 || humidity > 60) {
-      humidityScore = Math.max(0, 100 - Math.abs(humidity - 50) * 2);
-    }
-    
-    // CO: óptimo < 20 ppm
-    if (co > 20) {
-      coScore = Math.max(0, 100 - (co - 20) * 2);
-    }
-    
-    // Promedio ponderado
-    const airQuality = Math.round((tempScore * 0.3 + humidityScore * 0.3 + coScore * 0.4));
-    return Math.max(0, Math.min(100, airQuality));
-  };
-
-  // Función para obtener datos del backend
-  const fetchSensorData = async () => {
-    try {
-      console.log('Obteniendo datos de sensores del backend...');
-      
-      // TODO: Reemplazar con llamada real al backend
-      // const response = await api.get('/sensors/environmental');
-      // const data = response.data;
-      
-      // Datos estáticos para mostrar
-      const mockData = {
-        temperature: 23.5,
-        humidity: 48.7,
-        co: 15.2
-      };
-      
-      setSensorData(mockData);
-      setLoading(false);
-      
-    } catch (error) {
-      console.error('Error obteniendo datos de sensores:', error);
-      setLoading(false);
-    }
-  };
-
-  // Cargar datos al usarel componente
-  useEffect(() => {
-    fetchSensorData();
-    
-    // Opcional: refrescar datos cada 30 segundos
-    const interval = setInterval(fetchSensorData, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  // Función para calcular el porcentaje de la barra de temperatura
-  const getTemperaturePercentage = () => {
-    // Rango de temperatura: 0-40°C = 0-100%
-    return Math.min(Math.max((sensorData.temperature / 40) * 100, 0), 100);
-  };
-
-  // Función para calcular el porcentaje de la barra de humedad
-  const getHumidityPercentage = () => {
-    // La humedad ya está en porcentaje (0-100%)
-    return Math.min(Math.max(sensorData.humidity, 0), 100);
-  };
-
-  // Función para calcular el porcentaje de la barra de CO
-  const getCOPercentage = () => {
-    // Rango de CO: 0-100 ppm = 0-100%
-    return Math.min(Math.max(sensorData.co, 0), 100);
-  };
-
-  if (loading) {
-    return (
-      <div className="admin-panel min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#274181] mx-auto mb-4"></div>
-          <p className="text-[#274181] text-lg font-semibold">Cargando datos ambientales...</p>
-        </div>
-      </div>
-    );
+  // Mostrar loading solo si no hay conexión y no hay datos
+  if (!isConnected && !lastUpdate) {
+    return <LoadingMessage message="Conectando con sensores..." />;
   }
 
   return (
     <div className="admin-panel min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-[#274181] rounded-full blur-3xl"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-[#0DC0E8] rounded-full blur-2xl"></div>
-        <div className="absolute bottom-32 left-1/3 w-28 h-28 bg-[#F6963F] rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-20 h-20 bg-[#D95766] rounded-full blur-2xl"></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
       </div>
-      
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-5xl font-bold text-[#274181] mb-4 bg-gradient-to-r from-[#274181] to-[#0DC0E8] bg-clip-text text-transparent">
-            Monitoreo Ambiental
-          </h1>
-        </div>
 
-        {/* Sensores Ambientales */}
-        <div className="mb-12">
-          
-          {/* Calidad del Ambiente - Primera fila */}
-          <div className="mb-8">
-            <div className="max-w-md mx-auto">
-              {/* Calidad del Ambiente */}
-              <div className="group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 transform overflow-hidden">
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#95CDD1]/5 to-[#0DC0E8]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
-                <div className="relative flex items-center justify-between mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#95CDD1] to-[#0DC0E8] rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-[#95CDD1]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                    <FaLeaf className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-500" />
-                  </div>
-                  <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                    calculateAirQuality() < 50 
-                      ? 'text-red-600 bg-red-100' 
-                      : calculateAirQuality() < 80
-                      ? 'text-yellow-600 bg-yellow-100'
-                      : 'text-green-600 bg-green-100'
-                  }`}>
-                    {calculateAirQuality()}%
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold text-[#274181] mb-3 group-hover:text-[#95CDD1] transition-colors duration-300">Calidad del Ambiente</h3>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                  <div 
-                    className={`h-3 rounded-full transition-all duration-700 group-hover:shadow-lg ${
-                      calculateAirQuality() < 50 
-                        ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                        : calculateAirQuality() < 80
-                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                        : 'bg-gradient-to-r from-green-500 to-green-600'
-                    }`}
-                    style={{ width: `${calculateAirQuality()}%` }}
-                  ></div>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basado en temperatura, humedad y CO
-                </p>
-                {calculateAirQuality() < 50 && (
-                  <div className="mt-3 flex items-center gap-2 text-red-600">
-                    <FaExclamationTriangle className="w-4 h-4" />
-                    <span className="text-sm font-semibold">CALIDAD BAJA</span>
-                  </div>
-                )}
-                {calculateAirQuality() >= 50 && calculateAirQuality() < 80 && (
-                  <div className="mt-3 flex items-center gap-2 text-yellow-600">
-                    <FaExclamationTriangle className="w-4 h-4" />
-                    <span className="text-sm font-semibold">CALIDAD MEDIA</span>
-                  </div>
-                )}
-                {calculateAirQuality() >= 80 && (
-                  <div className="mt-3 flex items-center gap-2 text-green-600">
-                    <FaLeaf className="w-4 h-4" />
-                    <span className="text-sm font-semibold">CALIDAD EXCELENTE</span>
-                  </div>
-                )}
-              </div>
+      {/* Header */}
+      <div className="relative z-10 pt-20 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#274181] mb-2">
+              Monitoreo Ambiental
+            </h1>
+            <p className="text-lg text-[#274181]/80">Sensores en tiempo real</p>
+
+            {/* WebSocket Status */}
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm text-[#274181]/70">
+                {isConnected ? 'Conectado en tiempo real' : 'Desconectado'}
+              </span>
+              {lastUpdate && (
+                <span className="text-xs text-[#274181]/60">
+                  • Última actualización: {new Date(lastUpdate).toLocaleTimeString()}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Sensores Individuales - Segunda fila */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Sensor de Temperatura */}
-            <div className="group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 transform overflow-hidden">
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#D95766]/5 to-[#F6963F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="relative flex items-center justify-between mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#D95766] to-[#F6963F] rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-[#D95766]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <FaThermometerHalf className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-500" />
-                </div>
-                <span className="text-sm font-semibold text-[#D95766] bg-[#D95766]/10 px-3 py-1 rounded-full">
-                  {sensorData.temperature.toFixed(1)}°C
-                </span>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-center">
+                <FaExclamationTriangle className="text-red-500 mr-2" />
+                <span className="text-red-700 font-medium">Error de conexión: {error}</span>
               </div>
-              <h3 className="text-2xl font-bold text-[#274181] mb-3 group-hover:text-[#D95766] transition-colors duration-300">Temperatura</h3>
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                <div 
-                  className="bg-gradient-to-r from-[#D95766] to-[#F6963F] h-3 rounded-full transition-all duration-700 group-hover:shadow-lg"
-                  style={{ width: `${getTemperaturePercentage()}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Temperatura ambiental
-              </p>
             </div>
+          )}
 
-            {/* Sensor de Humedad */}
-            <div className="group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 transform overflow-hidden">
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0DC0E8]/5 to-[#95CDD1]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="relative flex items-center justify-between mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#0DC0E8] to-[#95CDD1] rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-[#0DC0E8]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <FaTint className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-500" />
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Calidad Ambiental */}
+            <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-[#0DC0E8] to-[#274181] rounded-2xl flex items-center justify-center shadow-lg">
+                    <FaLeaf className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-[#274181]">Calidad Ambiental</h2>
+                    <p className="text-sm text-[#274181]/70">Índice general de calidad del aire</p>
+                  </div>
                 </div>
-                <span className="text-sm font-semibold text-[#0DC0E8] bg-[#0DC0E8]/10 px-3 py-1 rounded-full">
-                  {sensorData.humidity.toFixed(1)}%
-                </span>
               </div>
-              <h3 className="text-2xl font-bold text-[#274181] mb-3 group-hover:text-[#0DC0E8] transition-colors duration-300">Humedad</h3>
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                <div 
-                  className="bg-gradient-to-r from-[#0DC0E8] to-[#95CDD1] h-3 rounded-full transition-all duration-700 group-hover:shadow-lg"
-                  style={{ width: `${getHumidityPercentage()}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Nivel de humedad ambiental
-              </p>
-            </div>
 
-            {/* Sensor de Monóxido de Carbono */}
-            <div className="group relative bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 transform overflow-hidden">
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#D95766]/5 to-[#F6963F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="relative flex items-center justify-between mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#D95766] to-[#F6963F] rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-[#D95766]/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <FaWind className="w-8 h-8 text-white group-hover:rotate-12 transition-transform duration-500" />
+              <div className="space-y-6">
+                {/* IAQ Score */}
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-[#274181] mb-2">{airQuality.score}%</div>
+                  <div className="text-lg font-semibold text-[#274181] mb-4">{airQuality.category}</div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                    <div
+                      className="h-4 rounded-full transition-all duration-1000 ease-out"
+                      style={{
+                        width: `${airQuality.score}%`,
+                        background:
+                          airQuality.score >= 80
+                            ? 'linear-gradient(90deg, #0DC0E8, #95CDD1)'
+                            : airQuality.score >= 60
+                            ? 'linear-gradient(90deg, #F6963F, #0DC0E8)'
+                            : 'linear-gradient(90deg, #D95766, #F6963F)',
+                      }}
+                    >
+                      <div className="text-right pr-2 text-white text-xs font-bold leading-4">
+                        {airQuality.score}%
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                  sensorData.co > 50 
-                    ? 'text-red-600 bg-red-100' 
-                    : 'text-[#D95766] bg-[#D95766]/10'
-                }`}>
-                  {sensorData.co.toFixed(1)} ppm
-                </span>
-              </div>
-              <h3 className="text-2xl font-bold text-[#274181] mb-3 group-hover:text-[#D95766] transition-colors duration-300">CO</h3>
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                <div 
-                  className={`h-3 rounded-full transition-all duration-700 group-hover:shadow-lg ${
-                    sensorData.co > 50 
-                      ? 'bg-gradient-to-r from-red-500 to-red-600' 
-                      : 'bg-gradient-to-r from-[#D95766] to-[#F6963F]'
+
+                {/* Description */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <h3 className="text-[#274181] text-sm font-semibold mb-2">Descripción</h3>
+                  <p className="text-[#1E40AF] text-sm">{airQuality.description}</p>
+                </div>
+
+                {/* Recommendation */}
+                <div
+                  className={`rounded-xl p-4 border ${
+                    airQuality.score >= 80
+                      ? 'bg-green-50 border-green-200'
+                      : airQuality.score >= 60
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-red-50 border-red-200'
                   }`}
-                  style={{ width: `${getCOPercentage()}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Monóxido de carbono
-              </p>
-              {sensorData.co > 50 && (
-                <div className="mt-3 flex items-center gap-2 text-red-600">
-                  <FaExclamationTriangle className="w-4 h-4" />
-                  <span className="text-sm font-semibold">ALERTA</span>
+                >
+                  <h3
+                    className={`text-sm font-semibold mb-2 ${
+                      airQuality.score >= 80
+                        ? 'text-green-700'
+                        : airQuality.score >= 60
+                        ? 'text-yellow-700'
+                        : 'text-red-700'
+                    }`}
+                  >
+                    Recomendación
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      airQuality.score >= 80
+                        ? 'text-green-600'
+                        : airQuality.score >= 60
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {airQuality.recommendation}
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Sensor Cards */}
+            <div className="space-y-6">
+              {/* Temperature Card */}
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#D95766] to-[#F6963F] rounded-xl flex items-center justify-center">
+                      <FaThermometerHalf className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#274181] group-hover:text-[#D95766] transition-colors duration-300">
+                        Temperatura
+                      </h3>
+                      <p className="text-sm text-[#274181]/70">Rango óptimo: 18-25°C</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[#274181]">{sensorData.temperature.toFixed(1)}°C</div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-[#D95766] to-[#F6963F] transition-all duration-1000 ease-out"
+                    style={{ width: `${getTemperaturePercentage() * 2}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-[#274181]/60">
+                  La temperatura ambiente afecta el confort y la eficiencia energética.
+                </p>
+              </div>
+
+              {/* Humidity Card */}
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#95CDD1] to-[#274181] rounded-xl flex items-center justify-center">
+                      <FaTint className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#274181]">Humedad</h3>
+                      <p className="text-sm text-[#274181]/70">Rango óptimo: 40-60%</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[#274181]">{sensorData.humidity.toFixed(1)}%</div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-[#95CDD1] to-[#274181] transition-all duration-1000 ease-out"
+                    style={{ width: `${getHumidityPercentage()}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-[#274181]/60">
+                  La humedad relativa influye en la calidad del aire y el confort térmico.
+                </p>
+              </div>
+
+              {/* CO Card */}
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#F6963F] to-[#D95766] rounded-xl flex items-center justify-center">
+                      <FaWind className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#274181]">Monóxido de Carbono</h3>
+                      <p className="text-sm text-[#274181]/70">Rango seguro: 0-9 ppm</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-[#274181]">{sensorData.co.toFixed(1)} ppm</div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-[#F6963F] to-[#D95766] transition-all duration-1000 ease-out"
+                    style={{ width: `${getCOPercentage()}%` }}
+                  />
+                </div>
+
+                <p className="text-xs text-[#274181]/60">
+                  El CO es un gas tóxico que puede causar problemas de salud graves.
+                </p>
+              </div>
             </div>
           </div>
         </div>

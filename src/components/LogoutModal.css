@@ -1,23 +1,25 @@
 .logout-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-
   min-height: 100dvh;
 }
 
 .logout-modal {
-  background: #274181;
+  background: rgba(245, 242, 242, 0.95);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(149, 205, 209, 0.3);
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(39, 65, 129, 0.3);
+  border: 2px solid rgba(39, 65, 129, 0.3);
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 50px -12px rgba(39, 65, 129, 0.4),
+    0 0 0 1px rgba(149, 205, 209, 0.1),
+    inset 0 1px 0 rgba(245, 242, 242, 0.1);
   max-width: 500px;
   width: 100%;
   position: relative;
@@ -33,11 +35,11 @@
   bottom: 0;
   background: linear-gradient(
     45deg,
-    rgba(149, 205, 209, 0.2) 0%,
-    rgba(13, 192, 232, 0.2) 50%,
-    rgba(246, 150, 63, 0.2) 100%
+    rgba(39, 65, 129, 0.1) 0%,
+    rgba(13, 192, 232, 0.1) 50%,
+    rgba(246, 150, 63, 0.1) 100%
   );
-  opacity: 0.3;
+  opacity: 0.5;
   z-index: -1;
 }
 
@@ -46,14 +48,14 @@
   align-items: center;
   gap: 1rem;
   padding: 2rem 2rem 1rem;
-  border-bottom: 1px solid rgba(149, 205, 209, 0.3);
+  border-bottom: 2px solid rgba(39, 65, 129, 0.2);
   position: relative;
 }
 
 .logout-modal-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #D95766 0%, #F6963F 100%);
+  background: linear-gradient(135deg, #0DC0E8 0%, #274181 100%);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -61,7 +63,7 @@
   font-size: 1.5rem;
   border-radius: 50%;
   line-height: 0;  
-  box-shadow: 0 8px 25px rgba(217, 87, 102, 0.3);
+  box-shadow: 0 8px 25px rgba(13, 192, 232, 0.3);
   animation: pulse-icon 2s ease-in-out infinite;
 }
 
@@ -77,34 +79,32 @@
 @keyframes pulse-icon {
   0%,
   100% {
-    box-shadow: 0 8px 25px rgba(217, 87, 102, 0.3);
+    box-shadow: 0 8px 25px rgba(13, 192, 232, 0.3);
   }
   50% {
-    box-shadow: 0 8px 35px rgba(217, 87, 102, 0.5);
+    box-shadow: 0 8px 35px rgba(13, 192, 232, 0.5);
   }
 }
 
 .logout-modal-title {
-  color: #F5F2F2;
+  color: #274181;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
   flex: 1;
-  background: linear-gradient(45deg, #F5F2F2, #95CDD1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  text-shadow: 0 2px 4px rgba(39, 65, 129, 0.2);
+  letter-spacing: 0.025em;
 }
 
 .logout-modal-close {
-  background: rgba(149, 205, 209, 0.2);
-  border: 1px solid rgba(149, 205, 209, 0.4);
+  background: rgba(39, 65, 129, 0.1);
+  border: 2px solid rgba(39, 65, 129, 0.3);
   border-radius: 50%;
   width: 40px;
   height: 40px;
   display: grid;
   place-items: center;
-  color: #95CDD1;
+  color: #274181;
   cursor: pointer !important;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
@@ -113,9 +113,9 @@
 
 .logout-modal-close:hover {
   cursor: pointer !important;
-  background: rgba(217, 87, 102, 0.3);
-  border-color: rgba(217, 87, 102, 0.5);
-  color: #D95766;
+  background: rgba(13, 192, 232, 0.2);
+  border-color: rgba(13, 192, 232, 0.4);
+  color: #0DC0E8;
   transform: scale(1.1);
 }
 .logout-modal-close svg {
@@ -162,11 +162,12 @@
 }
 
 .logout-modal-message {
-  color: #F5F2F2;
+  color: #274181;
   font-size: 1.1rem;
   line-height: 1.6;
   margin: 0;
   text-align: center;
+  font-weight: 500;
 }
 
 .logout-modal-footer {
@@ -194,29 +195,29 @@
 }
 
 .logout-modal-cancel {
-  background: rgba(149, 205, 209, 0.2);
-  color: #F5F2F2;
-  border: 1px solid rgba(149, 205, 209, 0.4);
+  background: rgba(39, 65, 129, 0.1);
+  color: #274181;
+  border: 2px solid rgba(39, 65, 129, 0.3);
   backdrop-filter: blur(10px);
 }
 
 .logout-modal-cancel:hover {
-  background: rgba(149, 205, 209, 0.3);
-  border-color: rgba(149, 205, 209, 0.5);
+  background: rgba(39, 65, 129, 0.2);
+  border-color: rgba(39, 65, 129, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(149, 205, 209, 0.2);
+  box-shadow: 0 8px 25px rgba(39, 65, 129, 0.2);
 }
 
 .logout-modal-confirm {
-  background: linear-gradient(135deg, #D95766 0%, #F6963F 100%);
+  background: linear-gradient(135deg, #0DC0E8 0%, #274181 100%);
   color: white;
-  box-shadow: 0 8px 25px rgba(217, 87, 102, 0.3);
+  box-shadow: 0 8px 25px rgba(13, 192, 232, 0.3);
 }
 
 .logout-modal-confirm:hover {
   background: linear-gradient(135deg, #F6963F 0%, #D95766 100%);
   transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(217, 87, 102, 0.4);
+  box-shadow: 0 12px 35px rgba(246, 150, 63, 0.4);
 }
 
 .logout-modal-confirm:active {

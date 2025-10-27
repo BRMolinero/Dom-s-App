@@ -6,19 +6,20 @@ import {
   FaLock,
   FaCheckCircle,
   FaRobot,
+  FaEnvelope,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
 import { registerApi } from "../../api/auth";
 
-import logo from "../../assets/logo1.png";
+
 import RobotBackground from "../../components/RobotBackground";
 
 import "./RegisterPage.css";   // estilos de esta pantalla
 import "../login/LoginPage.css"; // reutilizamos estilos del login (dofon, inputs, etc.)
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ username: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
@@ -66,22 +67,23 @@ export default function RegisterPage() {
 
   const isValid =
     form.username.trim().length >= 3 &&
-    form.password.length >= 4 &&
-    form.password === form.confirm;
+    form.email.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+    form.password.length >= 8;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
 
     if (!isValid) {
-      setErrorMsg("Revisá los campos: usuario (≥3), contraseña (≥4) y que coincidan.");
+      setErrorMsg("Revisá los campos: usuario (≥3), email válido, contraseña (≥8).");
       return;
     }
 
     try {
       setSubmitting(true);
       // 1) Registro
-      await registerApi({ username: form.username.trim(), password: form.password });
+      await registerApi({ username: form.username.trim(), email: form.email.trim(), password: form.password });
 
       // 2) Modal de éxito
       setSuccessOpen(true);
@@ -99,7 +101,7 @@ export default function RegisterPage() {
   // Al confirmar el modal: login automático y a Home
   const handleSuccessOk = async () => {
     try {
-      await login({ username: form.username, password: form.password });
+      await login({ username: form.email, password: form.password });
       navigate("/", { replace: true });
     } catch {
       // Si algo falla acá, te dejo un fallback simple
@@ -164,8 +166,28 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Contraseña */}
+            {/* Email */}
             <div className="relative" ref={(el) => (inputsRef.current[1] = el)}>
+              <label htmlFor="email" className="block text-white font-bold text-sm mb-3">
+                
+              </label>
+              <div className="relative">
+                <FaEnvelope className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+                <input
+                  type="email"
+                  id="email"
+                  value={form.email}
+                  onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+                  required
+                  className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                  placeholder="Email"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            {/* Contraseña */}
+            <div className="relative" ref={(el) => (inputsRef.current[2] = el)}>
               <label htmlFor="password" className="block text-white font-bold text-sm mb-3">
                
               </label>
@@ -177,30 +199,9 @@ export default function RegisterPage() {
                   value={form.password}
                   onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
                   required
-                  minLength={4}
+                  minLength={8}
                   className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                   placeholder="Contraseña"
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
-
-            {/* Repetir contraseña */}
-            <div className="relative" ref={(el) => (inputsRef.current[2] = el)}>
-              <label htmlFor="confirm" className="block text-white font-bold text-sm mb-3">
-                
-              </label>
-              <div className="relative">
-                <FaLock className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
-                <input
-                  type="password"
-                  id="confirm"
-                  value={form.confirm}
-                  onChange={(e) => setForm((s) => ({ ...s, confirm: e.target.value }))}
-                  required
-                  minLength={4}
-                  className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
-                  placeholder="Confirmar contraseña"
                   autoComplete="new-password"
                 />
               </div>
@@ -222,7 +223,7 @@ export default function RegisterPage() {
               ref={btnRef}
               type="submit"
               disabled={submitting}
-              className="w-full bg-gradient-to-r  from-[#F6963F] to-[#D95766] text-white font-bold py-4 px-6 rounded-xl text-lg tracking-wide hover:from-[#F6963F]/90 hover:to-[#D95766]/90 focus:from-[#F6963F]/90 focus:to-[#D95766]/90 disabled:from-[#F6963F]/50 disabled:to-[#D95766]/50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] focus:scale-[1.02]"
+              className="w-full bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white font-bold py-4 px-6 rounded-xl text-lg tracking-wide hover:from-[#F6963F]/90 hover:to-[#D95766]/90 focus:from-[#F6963F]/90 focus:to-[#D95766]/90 disabled:from-[#F6963F]/50 disabled:to-[#D95766]/50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] focus:scale-[1.02]"
             >
               <span className="flex items-center justify-center gap-2">
                 {submitting ? (
@@ -260,18 +261,28 @@ export default function RegisterPage() {
 
       {/* Modal de éxito */}
       {successOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[rgba(0,0,0,0.65)] backdrop-blur">
-          <div className="success-modal">
-            <div className="success-modal-header">
-              <FaCheckCircle className="success-icon" />
-              <h3 className="success-title">¡Cuenta creada!</h3>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-[rgba(39,65,129,0.3)] rounded-3xl shadow-[0_25px_50px_-12px_rgba(39,65,129,0.4)] w-auto relative overflow-hidden">
+            
+            {/* Header */}
+            <div className="flex items-center gap-4 p-6 pb-4 border-b-2 border-[rgba(39,65,129,0.2)] relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#0DC0E8] to-[#274181] rounded-full flex items-center justify-center text-white text-xl shadow-[0_8px_25px_rgba(13,192,232,0.3)] animate-pulse">
+                <FaCheckCircle />
+              </div>
+              <h3 className="text-[#274181] text-xl font-bold flex-1 text-shadow-[0_2px_4px_rgba(39,65,129,0.2)] tracking-wide">Cuenta creada exitosamente</h3>
             </div>
-            <div className="success-body">
-              <p>Tu cuenta se creó correctamente! :D</p>
-              <p>Iniciaremos sesión ahora mismo!</p>
+            
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-[#274181] text-base leading-relaxed text-center font-medium">Iniciaremos sesión de forma automática a continuación.</p>
             </div>
-            <div className="success-actions">
-              <button onClick={handleSuccessOk} className="success-ok">
+            
+            {/* Footer */}
+            <div className="flex justify-end gap-4 p-4 pb-6 pr-6">
+              <button 
+                onClick={handleSuccessOk} 
+                className="px-6 py-2 bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white font-medium rounded-lg shadow-[0_8px_25px_rgba(13,192,232,0.3)] hover:from-[#F6963F] hover:to-[#D95766] hover:shadow-[0_12px_35px_rgba(246,150,63,0.4)] hover:-translate-y-0.5 transition-all duration-300 min-w-[100px] h-10"
+              >
                 OK
               </button>
             </div>

@@ -19,26 +19,33 @@ export function AuthProvider({ children }) {
   // 2) Login: con fallback a credenciales hardcodeadas para desarrollo
   const login = useCallback(async ({ username, password }) => {
     try {
-      // Intentar login con el backend primero
+      console.log("🔐 Iniciando login con el backend...");
       const data = await loginApi({ username, password });
+      
+      if (!data.accessToken) {
+        throw new Error("No se recibió token de acceso del servidor");
+      }
+      
+      console.log("✅ Login exitoso, guardando token y usuario");
       setAccessToken(data.accessToken);
-      setUser(data.user ?? null);
+      setUser(data.usuario ?? null);
       localStorage.setItem("accessToken", data.accessToken);
-      if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.usuario) localStorage.setItem("user", JSON.stringify(data.usuario));
       return data;
     } catch (error) {
+      console.error("❌ Error en login:", error);
       // Fallback: credenciales hardcodeadas para desarrollo
-      const hardcodedCredentials = {
+      /* const hardcodedCredentials = {
         username: "domus_admin",
         password: "domus123"
-      };
+      }; */
       
-      if (username === hardcodedCredentials.username && password === hardcodedCredentials.password) {
+      /* if (username === hardcodedCredentials.username && password === hardcodedCredentials.password) {
         const mockData = {
           accessToken: "mock_token_" + Date.now(),
           user: {
             id: 1,
-            username: "domus_admin",
+            username: "",
             role: "admin",
             name: "Administrador Domüs"
           }
@@ -51,9 +58,9 @@ export function AuthProvider({ children }) {
         
         console.log("✅ Login exitoso con credenciales de desarrollo");
         return mockData;
-      }
+      } */
       
-      // Si no coinciden las credenciales hardcodeadas, lanzar el error original
+      // Propagar el error con toda la información necesaria
       throw error;
     }
   }, []);
@@ -66,10 +73,22 @@ export function AuthProvider({ children }) {
       // Si falla el logout del backend, continuar con la limpieza local
       console.log("⚠️ Logout del backend falló, limpiando sesión local");
     } finally {
+      // Limpiar estado del contexto
       setAccessToken(null);
       setUser(null);
+      
+      // Limpiar todos los datos de sesión del localStorage
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("token");
+      
+      // Limpiar cualquier otro dato de sesión que pueda existir
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('token') || key.includes('session')) {
+          localStorage.removeItem(key);
+        }
+      });
     }
   }, []);
 
@@ -85,20 +104,28 @@ export function AuthProvider({ children }) {
         const tokenLS = localStorage.getItem("accessToken");
         if (tokenLS && mounted) setAccessToken(tokenLS);
 
-        // Intento de refresh (requiere cookie rtk); si anda, rotamos token
-        const data = await refreshApi(); // withCredentials: true (cookie)
-        if (!mounted) return;
+        // Intento de refresh solo si hay token en LS
+        if (tokenLS) {
+          try {
+            const data = await refreshApi(); // withCredentials: true (cookie)
+            if (!mounted) return;
 
-        if (data?.accessToken) {
-          setAccessToken(data.accessToken);
-          localStorage.setItem("accessToken", data.accessToken);
+            if (data?.accessToken) {
+              setAccessToken(data.accessToken);
+              localStorage.setItem("accessToken", data.accessToken);
+            }
+          } catch (refreshError) {
+            // El refresh falló silenciosamente, pero seguimos con el token de LS si existe
+            console.log("ℹ️ No hay sesión activa, continuando con token local si existe");
+          }
         }
 
         // Si quisieras, podrías cargar /me aquí cuando no haya user en LS
         // try { const me = await api.get('/auth/me'); setUser(me.data); localStorage.setItem('user', JSON.stringify(me.data)); } catch {}
-      } catch {
+      } catch (error) {
         // Importante: NO limpiar localStorage si el refresh falla
         // Dejar que el app siga con el token de LS (si existía)
+        console.error("Error durante bootstrap:", error);
       } finally {
         if (mounted) setBootstrapped(true);
       }

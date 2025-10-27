@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { FaRobot, FaBars, FaTimes, FaSignOutAlt, FaCog } from "react-icons/fa";
+import { FaRobot, FaBars, FaTimes, FaSignOutAlt } from "react-icons/fa";
+import { HiOutlineHome, HiOutlineShieldCheck, HiOutlineUser } from "react-icons/hi";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useSensorData } from '../context/SensorContext';
 import LogoutModal from "./LogoutModal";
 
 const MainNavbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  const handleConfigClick = () => {
-    if (window.openPhoneConfig) {
-      window.openPhoneConfig();
-    }
-  };
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { clearSessionData } = useSensorData();
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -19,10 +20,31 @@ const MainNavbar = () => {
   const handleLogoutConfirm = async () => {
     try {
       console.log('Iniciando proceso de logout...');
-      // Simular logout - redirigir a login
-      window.location.href = '/login';
+      
+      // Limpiar datos de sesión en localStorage
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      
+      // Limpiar datos adicionales de sesión si existen
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('token');
+      
+      // Limpiar datos del contexto de sensores y cerrar WebSocket
+      if (clearSessionData) {
+        clearSessionData();
+      }
+      
+      // Cerrar sesión en el contexto de autenticación
+      await logout();
+      
+      console.log('Sesión cerrada correctamente');
+      
+      // Redirigir a login reemplazando la entrada del historial para evitar volver atrás
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
+      // Aunque haya error, redirigir a login reemplazando el historial
+      navigate('/login', { replace: true });
     }
   };
 
@@ -34,12 +56,20 @@ const MainNavbar = () => {
     {
       key: 'home',
       label: 'Inicio',
-      onClick: () => window.location.href = '/'
+      icon: HiOutlineHome,
+      path: '/'
     },
     {
       key: 'admin',
       label: 'Monitoreo Ambiental',
-      onClick: () => window.location.href = '/admin'
+      icon: HiOutlineShieldCheck,
+      path: '/admin'
+    },
+    {
+      key: 'profile',
+      label: 'Mi Perfil',
+      icon: HiOutlineUser,
+      path: '/profile'
     }
   ];
 
@@ -72,25 +102,21 @@ const MainNavbar = () => {
               display: 'flex', 
               alignItems: 'center', 
               cursor: 'pointer',
-              padding: '8px 8px',
-              borderRadius: '12px',
-              transition: 'all 0.3s ease',
-              position: 'relative'
+              padding: '8px',
+              transition: 'all 0.3s ease'
             }}
-            onClick={() => window.location.href = '/domus'}
+            onClick={() => navigate('/')}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0, 194, 199, 0.05)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.opacity = '0.7';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.opacity = '1';
             }}
           >
             <img 
               src="/logo domus robotOK.png" 
               alt="Domüs Robot" 
-              style={{ width: 40, height: 40, objectFit: 'contain' }}
+              style={{ width: 120, height: 120, objectFit: 'contain' }}
             />
           </div>
 
@@ -100,69 +126,45 @@ const MainNavbar = () => {
             alignItems: 'center', 
             gap: 16
           }} className="desktop-menu-container">
-            <nav style={{ display: 'flex', gap: '8px' }}>
-              {menuItems.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={item.onClick}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#4B5563',
-                    fontFamily: 'Rebelton, sans-serif',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = 'rgba(0, 194, 199, 0.05)';
-                    e.target.style.color = '#0B3C5D';
-                    e.target.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'transparent';
-                    e.target.style.color = '#4B5563';
-                    e.target.style.transform = 'translateY(0)';
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <nav style={{ display: 'flex', gap: '32px' }}>
+              {menuItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => navigate(item.path)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '12px 0',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#4B5563',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      textTransform: 'capitalize'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.color = '#0B3C5D';
+                      e.target.style.opacity = '0.8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.color = '#4B5563';
+                      e.target.style.opacity = '1';
+                    }}
+                  >
+                    <IconComponent style={{ fontSize: '18px', strokeWidth: '1.5' }} />
+                    {item.label}
+                  </button>
+                );
+              })}
             </nav>
             
-            {/* Botón de Configuración */}
-            <button
-              onClick={handleConfigClick}
-              style={{ 
-                width: 40,
-                height: 40,
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #274181, #0DC0E8)',
-                border: 'none',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '15px',
-                transition: 'all 0.3s ease',
-                marginLeft: '16px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-              }}
-              title="Configurar SOS"
-            >
-              <FaCog className="w-4 h-4" />
-            </button>
-            
+            {/* Botón de Logout */}
             <button
               onClick={handleLogoutClick}
               style={{ 
@@ -198,11 +200,11 @@ const MainNavbar = () => {
             onClick={() => setMobileMenuOpen(true)}
             style={{ 
               display: 'none',
-              color: '#0B3C5D',
+              color: '#4B5563',
               fontSize: 20,
-              width: 48,
-              height: 48,
-              borderRadius: '12px',
+              width: 40,
+              height: 40,
+              borderRadius: '8px',
               transition: 'all 0.3s ease',
               marginLeft: '16px',
               background: 'transparent',
@@ -211,10 +213,12 @@ const MainNavbar = () => {
             }}
             className="mobile-menu-button"
             onMouseEnter={(e) => {
-              e.target.style.transform = 'scale(1.05)';
+              e.target.style.color = '#0B3C5D';
+              e.target.style.opacity = '0.8';
             }}
             onMouseLeave={(e) => {
-              e.target.style.transform = 'scale(1)';
+              e.target.style.color = '#4B5563';
+              e.target.style.opacity = '1';
             }}
           >
             <FaBars />
@@ -246,7 +250,7 @@ const MainNavbar = () => {
               <img 
                 src="/logo domus robotOK.png" 
                 alt="Domüs Robot" 
-                style={{ width: 40, height: 40, objectFit: 'contain' }}
+                style={{ width: 120, height: 120, objectFit: 'contain' }}
               />
             </div>
             <button
@@ -256,7 +260,16 @@ const MainNavbar = () => {
                 border: 'none',
                 fontSize: '20px',
                 cursor: 'pointer',
-                color: '#0B3C5D'
+                color: '#4B5563',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = '#0B3C5D';
+                e.target.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = '#4B5563';
+                e.target.style.opacity = '1';
               }}
             >
               <FaTimes />
@@ -265,78 +278,48 @@ const MainNavbar = () => {
 
           {/* Drawer Menu */}
           <nav style={{ marginBottom: '32px' }}>
-            {menuItems.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => {
-                  item.onClick();
-                  setMobileMenuOpen(false);
-                }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  padding: '12px 20px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  color: '#4B5563',
-                  fontFamily: 'Rebelton, sans-serif',
-                  transition: 'all 0.3s ease',
-                  marginBottom: '4px',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'rgba(0, 194, 199, 0.05)';
-                  e.target.style.color = '#0B3C5D';
-                  e.target.style.transform = 'translateX(4px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'transparent';
-                  e.target.style.color = '#4B5563';
-                  e.target.style.transform = 'translateX(0)';
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '12px 0',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#4B5563',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    transition: 'all 0.3s ease',
+                    marginBottom: '8px',
+                    textAlign: 'left',
+                    gap: '12px',
+                    textTransform: 'capitalize'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.color = '#0B3C5D';
+                    e.target.style.opacity = '0.8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.color = '#4B5563';
+                    e.target.style.opacity = '1';
+                  }}
+                >
+                  <IconComponent style={{ fontSize: '18px', strokeWidth: '1.5' }} />
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
-
-          {/* Drawer Config Button */}
-          <div style={{ 
-            textAlign: 'center',
-            padding: '0 24px',
-            marginBottom: '16px'
-          }}>
-            <button
-              onClick={() => {
-                handleConfigClick();
-                setMobileMenuOpen(false);
-              }}
-              style={{ 
-                width: '100%',
-                height: 48,
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #274181, #0DC0E8)',
-                border: 'none',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '16px',
-                fontFamily: 'Rebelton, sans-serif',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-              title="Configurar SOS"
-            >
-              <FaCog className="w-4 h-4" />
-              Configurar SOS
-            </button>
-          </div>
 
           {/* Drawer Logout Button */}
           <div style={{ 

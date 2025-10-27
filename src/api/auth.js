@@ -4,14 +4,14 @@ export async function loginApi({ username, password }) {
   try {
     const res = await api.post(
       "/auth/login",
-      { username, password },
-      { withCredentials: true }
+      { email: username, password } // El backend espera 'email' pero mantenemos 'username' en el frontend
     );
 
     const data = res?.data;
 
-    if (!data?.accessToken) {
+    if (!data?.token) {
       const msg =
+        data?.mensaje ||
         data?.message ||
         data?.error ||
         (res?.status === 401
@@ -22,23 +22,53 @@ export async function loginApi({ username, password }) {
       throw err;
     }
 
-    return data; 
+    // Convertir token del backend a accessToken para el frontend
+    return { 
+      accessToken: data.token,
+      usuario: data.usuario,
+      mensaje: data.mensaje
+    }; 
   } catch (err) {
- 
-    throw err;
+    // Mejorar el manejo de errores
+    if (err.response) {
+      // Error con respuesta del servidor
+      const errorData = err.response.data || {};
+      const errorMsg = errorData.mensaje || errorData.message || errorData.error || err.message;
+      const newErr = new Error(errorMsg);
+      newErr.response = {
+        status: err.response.status,
+        data: errorData
+      };
+      throw newErr;
+    } else if (err.request) {
+      // Error de conexión (sin respuesta del servidor)
+      throw new Error("No se pudo conectar al servidor. Verifique que el backend esté ejecutándose.");
+    } else {
+      // Otro tipo de error
+      throw err;
+    }
   }
 }
 
-export async function registerApi({ username, password }) {
-  const { data } = await api.post("/auth/register", { username, password }, { withCredentials: true });
+export async function registerApi({ username, email, password }) {
+  const { data } = await api.post("/auth/registro", { username, email, password });
   return data;
 }
 
 export async function refreshApi() {
-  const { data } = await api.post("/auth/refresh", {}, { withCredentials: true });
+  const { data } = await api.post("/auth/refresh", {});
   return data;
 }
 
 export async function logoutApi() {
-  await api.post("/auth/logout", {}, { withCredentials: true });
+  await api.post("/auth/logout", {});
+}
+
+export async function getProfileApi() {
+  try {
+    const res = await api.get("/auth/perfil");
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
 }

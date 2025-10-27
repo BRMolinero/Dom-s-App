@@ -1,10 +1,30 @@
 import React, { useState, useEffect } from 'react';
-// Iconos removidos - ya no se usan en este componente
+import { 
+  configurarTelefonoSOS, 
+  obtenerConfiguracionSOS, 
+  eliminarTelefonoSOS,
+  validarTelefonoInternacional,
+  formatearTelefono
+} from '../api/sos';
+import CustomAlert from './CustomAlert';
 
 const PhoneConfig = ({ isOpen, onClose, onSave }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [tempNumber, setTempNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [messageType, setMessageType] = useState('success');
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    confirmText: '',
+    cancelText: '',
+    type: 'success',
+    onConfirm: () => {}
+  });
 
   // Cargar número guardado al abrir el modal
   useEffect(() => {
@@ -20,20 +40,127 @@ const PhoneConfig = ({ isOpen, onClose, onSave }) => {
     setTempNumber(phoneNumber);
   };
 
-  const handleSave = () => {
-    if (tempNumber.trim()) {
-      setPhoneNumber(tempNumber);
-      onSave(tempNumber.trim());
+  const handleSave = async () => {
+    if (!tempNumber.trim()) {
+      setError('Debe ingresar un número de teléfono');
+      return;
+    }
+
+    const telefonoFormateado = formatearTelefono(tempNumber.trim());
+    
+    if (!validarTelefonoInternacional(telefonoFormateado)) {
+      setError('Formato inválido. Use formato internacional: +5493512345678');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setMessage(null);
+      setMessageType('success');
+      
+      const result = await configurarTelefonoSOS(telefonoFormateado);
+      
+      setPhoneNumber(telefonoFormateado);
       setIsEditing(false);
-      console.log('Número SOS guardado exitosamente:', tempNumber.trim());
-    } else {
-      console.log('Fallo al guardar número SOS: el número está vacío.');
+      
+      // Actualizar localStorage para compatibilidad
+      localStorage.setItem('sosPhoneNumber', telefonoFormateado);
+      
+      // Notificar al componente padre
+      onSave(telefonoFormateado);
+      
+      // Limpiar mensaje de eliminación si existía
+      if (messageType === 'warning') {
+        setMessage(null);
+        setMessageType('success');
+      }
+      
+      // Solo mostrar alerta si realmente se configuró un número nuevo
+      if (!phoneNumber || phoneNumber !== telefonoFormateado) {
+        setAlertConfig({
+          title: "¡Configuración exitosa!",
+          message: result.mensaje || 'Número SOS configurado correctamente',
+          confirmText: "Aceptar",
+          cancelText: "",
+          type: "success",
+          onConfirm: () => {}
+        });
+        setShowAlert(true);
+      }
+      
+      console.log('Número SOS guardado exitosamente:', telefonoFormateado);
+    } catch (err) {
+      setError(err.message || 'Error al configurar número SOS');
+      console.error('Error al guardar número SOS:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCancel = () => {
     setTempNumber(phoneNumber);
     setIsEditing(false);
+    setError(null);
+    setMessage(null);
+    setMessageType('success');
+  };
+
+  const handleEliminar = () => {
+    if (!phoneNumber) {
+      setError('No hay número configurado para eliminar');
+      return;
+    }
+
+    setAlertConfig({
+      title: "Eliminar número SOS",
+      message: "¿Estás seguro de que quieres eliminar el número SOS? Esta acción no se puede deshacer.",
+      confirmText: "Eliminar",
+      cancelText: "Cancelar",
+      type: "error",
+      onConfirm: eliminarTelefonoConfirmado
+    });
+    setShowAlert(true);
+  };
+
+  const eliminarTelefonoConfirmado = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await eliminarTelefonoSOS();
+      
+      setPhoneNumber('');
+      setTempNumber('');
+      
+      // Limpiar localStorage
+      localStorage.removeItem('sosPhoneNumber');
+      
+      // Notificar al componente padre
+      onSave('');
+      
+      // Mostrar alerta inmediatamente después de eliminar
+      setAlertConfig({
+        title: "¡Eliminación exitosa!",
+        message: result.mensaje || 'Número SOS eliminado correctamente',
+        confirmText: "Aceptar",
+        cancelText: "",
+        type: "success",
+        onConfirm: () => {
+          // Después de cerrar la alerta, mostrar mensaje persistente
+          setMessage('Teléfono SOS eliminado');
+          setMessageType('warning');
+        }
+      });
+      setShowAlert(true);
+      
+      console.log('Número SOS eliminado exitosamente');
+    } catch (err) {
+      setError(err.message || 'Error al eliminar número SOS');
+      console.error('Error al eliminar número SOS:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -67,8 +194,9 @@ const PhoneConfig = ({ isOpen, onClose, onSave }) => {
         <div className="space-y-6">
           {/* Descripción */}
           <div className="text-center">
-            <p className="text-[#274181]/80 text-sm leading-relaxed">
-              Configura el número de teléfono para emergencias. Este número será contactado cuando se presione el botón SOS.
+            <p className="text-[#274181]/80 text-sm leading-relaxed text-justify">
+              Configura el número de teléfono para emergencias.<br />
+              Este número será contactado cuando se presione el botón SOS.
             </p>
           </div>
 
@@ -93,13 +221,15 @@ const PhoneConfig = ({ isOpen, onClose, onSave }) => {
                 <div className="flex gap-3">
                   <button
                     onClick={handleSave}
-                    className="flex-1 bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/30 flex items-center justify-center gap-2"
+                    disabled={loading}
+                    className="flex-1 bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Guardar
+                    {loading ? 'Guardando...' : 'Guardar'}
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex-1 bg-[#95CDD1] text-[#274181] py-3 px-4 rounded-xl font-semibold hover:bg-[#95CDD1]/80 hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#95CDD1]/30 flex items-center justify-center gap-2"
+                    disabled={loading}
+                    className="flex-1 bg-[#95CDD1] text-[#274181] py-3 px-4 rounded-xl font-semibold hover:bg-[#95CDD1]/80 hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#95CDD1]/30 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     Cancelar
                   </button>
@@ -108,29 +238,75 @@ const PhoneConfig = ({ isOpen, onClose, onSave }) => {
             ) : (
               <div className="space-y-3">
                 <div className="w-full px-4 py-3 rounded-xl border-2 border-[#95CDD1] bg-[#F5F2F2] text-[#274181] font-medium min-h-[52px] flex items-center">
-                  {phoneNumber || 'No configurado'}
+                  {loading ? 'Cargando...' : (phoneNumber || 'No configurado')}
                 </div>
-                <button
-                  onClick={handleEdit}
-                  className="w-full bg-gradient-to-r from-[#F6963F] to-[#D95766] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#F6963F]/30 flex items-center justify-center gap-2"
-                >
-                  {phoneNumber ? 'Editar Número' : 'Configurar Número'}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleEdit}
+                    disabled={loading}
+                    className="flex-1 bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {phoneNumber ? 'Editar' : 'Configurar'}
+                  </button>
+                  {phoneNumber && (
+                    <button
+                      onClick={handleEliminar}
+                      disabled={loading}
+                      className="flex-1 bg-[#D95766] text-white py-3 px-4 rounded-xl font-semibold hover:bg-[#D95766]/90 hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#D95766]/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           {/* Información adicional */}
-          <div className="bg-[#95CDD1]/10 rounded-xl p-4 border border-[#95CDD1]/20">
-            <h3 className="text-sm font-semibold text-[#274181] mb-2">Formato del número:</h3>
-            <ul className="text-xs text-[#274181]/70 space-y-1">
-              <li>• Incluir código de país (ej: +54 para Argentina)</li>
-              <li>• Formato internacional estándar</li>
-              <li>• Ejemplo: +5493534567890</li>
-            </ul>
-          </div>
+
+          {/* Mensajes de estado */}
+          {message && (
+            <div className={`rounded-xl p-4 border ${
+              messageType === 'success' 
+                ? 'bg-green-50 border-green-300' 
+                : messageType === 'warning' 
+                ? 'bg-orange-50 border-orange-300' 
+                : 'bg-red-50 border-red-300'
+            }`}>
+              <div className={`font-medium text-sm ${
+                messageType === 'success' 
+                  ? 'text-green-700' 
+                  : messageType === 'warning' 
+                  ? 'text-orange-700' 
+                  : 'text-red-700'
+              }`}>
+                {messageType === 'success' && '✅ '}
+                {messageType === 'warning' && '⚠️ '}
+                {messageType === 'error' && '❌ '}
+                {message}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-300 rounded-xl p-4">
+              <div className="text-red-700 font-medium text-sm">❌ Error: {error}</div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isOpen={showAlert}
+        onClose={() => setShowAlert(false)}
+        onConfirm={alertConfig.onConfirm}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        type={alertConfig.type}
+      />
     </div>
   );
 };

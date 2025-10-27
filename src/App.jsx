@@ -3,7 +3,9 @@ import DomusPage from "./pages/domus/DomusPage.jsx";
 import AdminPanel from "./pages/admin/AdminPanel.jsx";
 import LoginPage from "./pages/login/LoginPage.jsx";
 import RegisterPage from "./pages/register/RegisterPage.jsx";
+import ProfilePage from "./pages/profile/ProfilePage.jsx";
 import Layout from "./components/Layout.jsx";
+import { SensorProvider } from "./context/SensorContext";
 
 const router = createBrowserRouter([
   {
@@ -11,6 +13,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <DomusPage /> },
       { path: "/admin", element: <AdminPanel /> },
+      { path: "/profile", element: <ProfilePage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/objetos", element: <Navigate to="/" replace /> }
@@ -19,5 +22,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <SensorProvider>
+      <RouterProvider router={router} />
+    </SensorProvider>
+  );
 }
