@@ -151,7 +151,7 @@ export default function RegisterPage() {
                 
               </label>
               <div className="relative">
-                <FaUser className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+                <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
                 <input
                   type="text"
                   id="username"
@@ -159,7 +159,7 @@ export default function RegisterPage() {
                   onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))}
                   required
                   minLength={3}
-                  className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                  className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                   placeholder="Usuario"
                   autoComplete="username"
                 />
@@ -172,14 +172,14 @@ export default function RegisterPage() {
                 
               </label>
               <div className="relative">
-                <FaEnvelope className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
                 <input
                   type="email"
                   id="email"
                   value={form.email}
                   onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
                   required
-                  className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                  className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                   placeholder="Email"
                   autoComplete="email"
                 />
@@ -192,7 +192,7 @@ export default function RegisterPage() {
                
               </label>
               <div className="relative">
-                <FaLock className="absolute top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
+                <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
                 <input
                   type="password"
                   id="password"
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                   onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
                   required
                   minLength={8}
-                  className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                  className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                   placeholder="Contraseña"
                   autoComplete="new-password"
                 />

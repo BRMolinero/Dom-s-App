@@ -149,7 +149,7 @@ export default function LoginPage() {
                 value={form.username}
                 onChange={onChange("username")}
                 required
-                className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                 placeholder="Email"
                 autoComplete="email"
               />
@@ -171,7 +171,7 @@ export default function LoginPage() {
                 value={form.password}
                 onChange={onChange("password")}
                 required
-                className="w-full pl-10 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                 placeholder="Contraseña"
                 autoComplete="current-password"
               />

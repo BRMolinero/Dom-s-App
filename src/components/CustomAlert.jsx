@@ -99,12 +99,6 @@ const CustomAlert = ({
 
           {/* Action Buttons */}
           <div className={`flex gap-3 ${!cancelText ? 'justify-center' : ''}`}>
-            <button
-              onClick={handleConfirm}
-              className={`${!cancelText ? 'w-full' : 'flex-1'} py-3 px-6 rounded-xl font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-4 ${styles.confirmBg} ${styles.confirmHover} ${styles.confirmFocus} shadow-lg hover:shadow-xl transform hover:scale-[1.02] focus:scale-[1.02]`}
-            >
-              {confirmText}
-            </button>
             {cancelText && (
               <button
                 onClick={handleCancel}
@@ -113,6 +107,12 @@ const CustomAlert = ({
                 {cancelText}
               </button>
             )}
+            <button
+              onClick={handleConfirm}
+              className={`${!cancelText ? 'w-full' : 'flex-1'} py-3 px-6 rounded-xl font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-4 ${styles.confirmBg} ${styles.confirmHover} ${styles.confirmFocus} shadow-lg hover:shadow-xl transform hover:scale-[1.02] focus:scale-[1.02]`}
+            >
+              {confirmText}
+            </button>
           </div>
         </div>
       </div>

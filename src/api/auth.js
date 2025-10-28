@@ -72,3 +72,12 @@ export async function getProfileApi() {
     throw err;
   }
 }
+
+export async function updateProfileApi({ username }) {
+  try {
+    const res = await api.patch("/auth/perfil", { username });
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+}

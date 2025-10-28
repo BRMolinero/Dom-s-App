@@ -9,7 +9,7 @@ import {
   validarTelefonoInternacional,
   formatearTelefono
 } from '../../api/sos';
-import { getProfileApi } from '../../api/auth';
+import { getProfileApi, updateProfileApi } from '../../api/auth';
 import CustomAlert from '../../components/CustomAlert';
 
 const ProfilePage = () => {
@@ -74,25 +74,29 @@ const ProfilePage = () => {
       
       // Actualizar el estado del perfil con el teléfono SOS
       if (profileDataFromBackend) {
-        setProfileData(prev => ({
-          ...prev,
+        const updatedProfileData = {
+          ...profileDataFromBackend,
           telefono_sos: numeroBackend
-        }));
-      }
-      
-      // Actualizar localStorage para compatibilidad
-      if (numeroBackend) {
-        localStorage.setItem('telefono_sosNumber', numeroBackend);
+        };
+        setProfileData(updatedProfileData);
+        
+        // Actualizar también el contexto de autenticación
+        const updatedUser = {
+          ...user,
+          telefono_sos: numeroBackend
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (err) {
       console.error('Error al cargar configuración SOS:', err);
-      // Fallback a localStorage si falla el backend
-      const savedNumber = localStorage.getItem('telefono_sosNumber') || '';
+      // Si falla, mantener el teléfono vacío en el perfil
       if (profileDataFromBackend) {
-        setProfileData(prev => ({
-          ...prev,
-          telefono_sos: savedNumber
-        }));
+        const updatedProfileData = {
+          ...profileDataFromBackend,
+          telefono_sos: ''
+        };
+        setProfileData(updatedProfileData);
       }
     }
   };
@@ -110,9 +114,15 @@ const ProfilePage = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      // Validar teléfono SOS si se proporcionó
+      // Verificar si el username cambió y actualizarlo en el backend
+      if (formData.username !== profileData?.username) {
+        await updateProfileApi({ username: formData.username });
+      }
+
+      // Validar y guardar teléfono SOS
+      let telefonoFormateado = '';
       if (formData.telefono_sos.trim()) {
-        const telefonoFormateado = formatearTelefono(formData.telefono_sos.trim());
+        telefonoFormateado = formatearTelefono(formData.telefono_sos.trim());
         
         if (!validarTelefonoInternacional(telefonoFormateado)) {
           setMessage({ type: 'error', text: 'Formato inválido. Use formato internacional: +5493512345678' });
@@ -122,22 +132,22 @@ const ProfilePage = () => {
 
         // Guardar teléfono SOS en el backend
         await configurarTelefonoSOS(telefonoFormateado);
-        
-        // Actualizar localStorage para compatibilidad
-        localStorage.setItem('telefono_sosNumber', telefonoFormateado);
-        
-        // Actualizar el estado local con el número formateado
-        setFormData(prev => ({
-          ...prev,
-          telefono_sos: telefonoFormateado
-        }));
+      } else {
+        // Si está vacío, eliminar del backend
+        await eliminarTelefonoSOS();
       }
+      
+      // Actualizar el estado local con el número formateado
+      setFormData(prev => ({
+        ...prev,
+        telefono_sos: telefonoFormateado
+      }));
       
       // Actualizar el contexto con los nuevos datos
       const updatedUser = {
         ...user,
         username: formData.username,
-        telefono_sos: formData.telefono_sos
+        telefono_sos: telefonoFormateado
       };
       
       setUser(updatedUser);
@@ -191,9 +201,6 @@ const ProfilePage = () => {
         ...prev,
         telefono_sos: ''
       }));
-      
-      // Limpiar localStorage
-      localStorage.removeItem('telefono_sosNumber');
       
       // Actualizar el contexto
       const updatedUser = {
@@ -305,13 +312,13 @@ const ProfilePage = () => {
               <input
                 type="tel"
                 name="telefono_sos"
-                value={formData.telefono_sos}
+                value={!isEditing && !formData.telefono_sos ? 'No configurado' : formData.telefono_sos}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                placeholder="Ej: +5493534567890"
-                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 text-[#274181] font-medium ${
+                placeholder={isEditing ? "Ej: +5493534567890" : ""}
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 font-medium ${
                   isEditing 
-                    ? 'border-[#95CDD1] focus:border-[#0DC0E8] focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/20 bg-white' 
+                    ? 'border-[#95CDD1] focus:border-[#0DC0E8] focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/20 bg-white text-[#274181]' 
                     : 'border-[#95CDD1] bg-[#F5F2F2] text-[#6B7280]'
                 }`}
               />

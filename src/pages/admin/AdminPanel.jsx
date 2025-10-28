@@ -45,7 +45,7 @@ const AdminPanel = () => {
             <h1 className="text-3xl sm:text-4xl font-bold text-[#274181] mb-2">
               Monitoreo Ambiental
             </h1>
-            <p className="text-lg text-[#274181]/80">Sensores en tiempo real</p>
+            {/* <p className="text-lg text-[#274181]/80">Sensores en tiempo real</p> */}
 
             {/* WebSocket Status */}
             <div className="mt-4 flex items-center justify-center gap-2">

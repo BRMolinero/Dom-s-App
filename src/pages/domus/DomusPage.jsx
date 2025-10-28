@@ -1,25 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp } from 'react-icons/fa';
-import PhoneConfig from '../../components/PhoneConfig';
+import CustomAlert from '../../components/CustomAlert';
+import { useAuth } from '../../context/AuthContext';
 
 const DomusPage = () => {
+  const { user } = useAuth();
   const [searchSelected, setSearchSelected] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showPhoneConfig, setShowPhoneConfig] = useState(false);
   const [sosPhoneNumber, setSosPhoneNumber] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedObjeto, setSelectedObjeto] = useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({});
 
-  // Exponer función de configuración globalmente
-  useEffect(() => {
-    window.openPhoneConfig = () => setShowPhoneConfig(true);
-    return () => {
-      delete window.openPhoneConfig;
-    };
-  }, []);
+  // Eliminar función de configuración global ya que solo se configura desde perfil
 
   // Detectar si es móvil
   useEffect(() => {
@@ -33,11 +30,14 @@ const DomusPage = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Cargar número de teléfono SOS guardado
+  // Obtener el teléfono SOS del objeto user
   useEffect(() => {
-    const savedNumber = localStorage.getItem('sosPhoneNumber') || '';
-    setSosPhoneNumber(savedNumber);
-  }, []);
+    if (user?.telefono_sos) {
+      setSosPhoneNumber(user.telefono_sos);
+    } else {
+      setSosPhoneNumber('');
+    }
+  }, [user]);
 
   const handleSearchClick = () => {
     if (isMobile) {
@@ -51,19 +51,22 @@ const DomusPage = () => {
     setShowModal(false);
   };
 
-  const handlePhoneConfigSave = (phoneNumber) => {
-    setSosPhoneNumber(phoneNumber);
-    localStorage.setItem('sosPhoneNumber', phoneNumber);
-    setShowPhoneConfig(false);
-  };
-
-  const handlePhoneConfigClose = () => {
-    setShowPhoneConfig(false);
-  };
 
   const handleSOSClick = () => {
     if (!sosPhoneNumber) {
-      setShowPhoneConfig(true);
+      // Mostrar modal informativo sin opción de navegar automáticamente
+      setAlertConfig({
+        title: 'Teléfono SOS no configurado',
+        message: 'No tienes un número de teléfono SOS configurado. Por favor, ve a tu perfil para configurarlo antes de usar esta función.',
+        confirmText: 'Entendido',
+        cancelText: null, // Sin botón de cancelar
+        type: 'warning',
+        onConfirm: () => {
+          // Solo cerrar el modal, sin navegar
+          setShowAlert(false);
+        }
+      });
+      setShowAlert(true);
       return;
     }
 
@@ -74,8 +77,8 @@ const DomusPage = () => {
     // Formato: https://wa.me/[número]?text=[mensaje]
     const whatsappUrl = `https://wa.me/${sosPhoneNumber.replace(/[^\d]/g, '')}?text=${defaultMessage}`;
     
-    // Abrir WhatsApp en nueva ventana (mantiene la app actual abierta)
-    window.open(whatsappUrl, '_blank');
+    // Abrir WhatsApp en la misma pestaña (no abre nueva pestaña)
+    window.location.href = whatsappUrl;
   };
 
   const handleObjetoClick = (objeto) => {
@@ -419,13 +422,6 @@ const DomusPage = () => {
           </div>
         )}
 
-        {/* Configuración de Teléfono SOS */}
-        <PhoneConfig 
-          isOpen={showPhoneConfig}
-          onClose={handlePhoneConfigClose}
-          onSave={handlePhoneConfigSave}
-        />
-
         {/* Modal de Confirmación Personalizado */}
         {showConfirmModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -459,6 +455,17 @@ const DomusPage = () => {
           </div>
         )}
 
+        {/* Custom Alert */}
+        <CustomAlert
+          isOpen={showAlert}
+          onClose={() => setShowAlert(false)}
+          onConfirm={alertConfig.onConfirm}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          confirmText={alertConfig.confirmText}
+          cancelText={alertConfig.cancelText}
+          type={alertConfig.type}
+        />
       </div>
     </div>
   );
