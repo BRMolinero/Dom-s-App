@@ -83,12 +83,29 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("token");
       
-      // Limpiar cualquier otro dato de sesión que pueda existir
+      // Limpiar datos relacionados con SOS
+      localStorage.removeItem("telefono_sosNumber");
+      localStorage.removeItem("sosPhoneNumber");
+      
+      // Limpiar CUALQUIER clave relacionada con la sesión del usuario
+      const keysToRemove = [];
       Object.keys(localStorage).forEach(key => {
-        if (key.includes('auth') || key.includes('token') || key.includes('session')) {
-          localStorage.removeItem(key);
+        // Limpiar cualquier clave relacionada con autenticación, usuario, o datos de sesión
+        if (key.includes('auth') || 
+            key.includes('token') || 
+            key.includes('session') || 
+            key.includes('sos') || 
+            key.includes('user') || 
+            key.includes('phone') ||
+            key.includes('telefono') ||
+            key.includes('profile') ||
+            key.includes('access')) {
+          keysToRemove.push(key);
         }
       });
+      
+      // Eliminar todas las claves encontradas
+      keysToRemove.forEach(key => localStorage.removeItem(key));
     }
   }, []);
 
