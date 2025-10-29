@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * Hook WebSocket:
- * - Singleton por URL (evita múltiples conexiones en dev/StrictMode/HMR)
- * - Reconexión con backoff lineal simple
- * - Heartbeat (ping/pong) opcional
+ * useWebSocket (mejorado)
+ * - Singleton por URL para evitar múltiples conexiones en dev/HMR
+ * - Reconexión con backoff lineal
+ * - Heartbeat opcional
+ * - NUEVO: deferConnect para esperar a que exista el token
+ * - NUEVO: exposing `connecting`
  */
 const globalRef = typeof window !== 'undefined' ? window : globalThis;
 
@@ -16,13 +18,15 @@ export default function useWebSocket(
     autoReconnect = true,
     enableHeartbeat = true,
     heartbeatInterval = 25000,
-    closeOnUnmount = false, // en dev, mejor dejar false para evitar loop con código 1000
-  } = {}
+    closeOnUnmount = false,
+    deferConnect = false, // 👈 NUEVO
+  } = {},
 ) {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
   const [lastMessage, setLastMessage] = useState(null);
+  const [connecting, setConnecting] = useState(false); // 👈 NUEVO
 
   const reconnectTimeoutRef = useRef(null);
   const heartbeatRef = useRef(null);
@@ -49,14 +53,15 @@ export default function useWebSocket(
         try {
           ws.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
         } catch {
-          // silencioso
+          /* ignore */
         }
       }
     }, heartbeatInterval);
   }, [enableHeartbeat, heartbeatInterval]);
 
   const connect = useCallback(() => {
-    // Reusar conexión global si existe y está OPEN (singleton por URL)
+    setConnecting(true);
+
     const cacheKey = `__DOMUS_WS_${url}__`;
     const cached = globalRef[cacheKey];
     if (cached && cached.readyState === WebSocket.OPEN) {
@@ -64,40 +69,73 @@ export default function useWebSocket(
       setIsConnected(true);
       setError(null);
       startHeartbeat(cached);
-      return;
-    }
-
-    try {
-      console.log(`🔌 Conectando a WebSocket: ${url}`);
-      const ws = new WebSocket(url);
-
-      ws.onopen = () => {
-        console.log('✅ WebSocket conectado');
+      setConnecting(false);
+      
+      // Mantener los listeners actuales también en el socket cacheado
+      // Esto asegura que los mensajes se procesen correctamente
+      cached.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.type === 'pong') return;
+          setLastMessage(data);
+        } catch (err) {
+          console.error('❌ WS message parse error:', err, 'raw:', event.data);
+        }
+      };
+      
+      // Reenviar token de autenticación en caso de que sea necesario
+      try {
         const token =
           localStorage.getItem('accessToken') ||
           localStorage.getItem('token') ||
           localStorage.getItem('access_token') ||
           localStorage.getItem('auth_token');
-
         if (token) {
-          console.log('🔐 Enviando token de autenticación al WebSocket');
-          ws.send(JSON.stringify({ type: 'auth', token }));
-        } else {
-          console.warn('⚠️ No hay token en localStorage para WebSocket');
+          console.log('🔐 Reenviando auth en socket cacheado...');
+          cached.send(JSON.stringify({ type: 'auth', token }));
         }
+      } catch {/* ignore */}
+      
+      return;
+    }
 
+    try {
+      const ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        console.log('✅ WebSocket conectado, enviando autenticación...');
+        // Adjuntar a cache global
+        globalRef[cacheKey] = ws;
+        setSocket(ws);
         setIsConnected(true);
         setError(null);
         reconnectAttempts.current = 0;
-        setSocket(ws);
-        globalRef[cacheKey] = ws;
+
+        // Enviar token si existe
+        try {
+          const token =
+            localStorage.getItem('accessToken') ||
+            localStorage.getItem('token') ||
+            localStorage.getItem('access_token') ||
+            localStorage.getItem('auth_token');
+          if (token) {
+            console.log('🔐 Enviando token de autenticación...');
+            ws.send(JSON.stringify({ type: 'auth', token }));
+          } else {
+            console.warn('⚠️ No se encontró token para autenticación WebSocket');
+          }
+        } catch (err) {
+          console.error('❌ Error obteniendo token:', err);
+        }
+
         startHeartbeat(ws);
+        setConnecting(false);
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data && data.type === 'pong') return; // ignorar pongs
+          if (data && data.type === 'pong') return;
           setLastMessage(data);
         } catch (err) {
           console.error('❌ WS message parse error:', err, 'raw:', event.data);
@@ -107,22 +145,23 @@ export default function useWebSocket(
       ws.onerror = (e) => {
         console.error('❌ WebSocket error:', e);
         setError('Error de conexión WebSocket');
+        setConnecting(false);
       };
 
       ws.onclose = (event) => {
-        console.log('❌ WebSocket cerrado:', event.code, event.reason || 'Sin razón');
         setIsConnected(false);
         setSocket(null);
         clearTimers();
+        setConnecting(false);
 
-        // No reconectar si cierre limpio (1000), cierre intencional o autoReconnect off
-        if (event.code === 1000 || intentionallyClosed.current || !autoReconnect) return;
+        // No reconectar si cierre limpio (1000) y lo cerramos manualmente, o si autoReconnect=false
+        const clean = event.code === 1000 || intentionallyClosed.current;
+        if (!autoReconnect || clean) return;
 
-        // Reconexión con intentos limitados (backoff lineal simple)
+        // Backoff lineal
         if (reconnectAttempts.current < maxReconnectAttempts) {
+          const delay = reconnectInterval * (reconnectAttempts.current + 1);
           reconnectAttempts.current += 1;
-          const delay = reconnectInterval * reconnectAttempts.current;
-          console.log(`🔄 Reintentando en ${delay}ms (${reconnectAttempts.current}/${maxReconnectAttempts})`);
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, delay);
@@ -133,52 +172,50 @@ export default function useWebSocket(
     } catch (err) {
       console.error('❌ Error creando WebSocket:', err);
       setError('Error creando conexión WebSocket');
+      setConnecting(false);
     }
   }, [url, autoReconnect, reconnectInterval, maxReconnectAttempts, startHeartbeat]);
 
   const disconnect = useCallback(() => {
     intentionallyClosed.current = true;
+    try {
+      socket?.close(1000, 'disconnect requested');
+    } catch {/* ignore */}
     clearTimers();
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      // cierre limpio; evita reconexión
-      socket.close(1000, 'Desconexión intencional');
-    }
   }, [socket]);
 
-  const sendMessage = useCallback((message) => {
-    if (socket && isConnected && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message));
-    } else {
-      console.warn('WS no está conectado; no se envió el mensaje');
-    }
-  }, [socket, isConnected]);
-
   const forceReconnect = useCallback(() => {
-    // Forzar un reconnect manual (por si querés botón)
     intentionallyClosed.current = false;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close(4000, 'Force reconnect'); // no 1000 => permitirá reconectar
-    } else {
-      connect();
+    try {
+      socket?.close(4000, 'force reconnect');
+    } catch {/* ignore */}
+  }, [socket]);
+
+  const sendMessage = useCallback((payload) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket no está conectado');
     }
-  }, [socket, connect]);
+    const msg = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    socket.send(msg);
+  }, [socket]);
 
   useEffect(() => {
     intentionallyClosed.current = false;
-    connect();
+    if (!deferConnect) connect();
+
     return () => {
-      // En dev/StrictMode, cerrar aquí con 1000 puede generar bucles; por eso es opcional
       if (closeOnUnmount) disconnect();
       else clearTimers();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connect, closeOnUnmount]);
+  }, [connect, closeOnUnmount, deferConnect]);
 
   return {
     socket,
     isConnected,
     error,
     lastMessage,
+    connecting, // 👈 NUEVO
     sendMessage,
     connect,
     disconnect,

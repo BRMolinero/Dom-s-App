@@ -31,6 +31,10 @@ export function AuthProvider({ children }) {
       setUser(data.usuario ?? null);
       localStorage.setItem("accessToken", data.accessToken);
       if (data.usuario) localStorage.setItem("user", JSON.stringify(data.usuario));
+      
+      // Disparar evento para que otros componentes se enteren del token
+      window.dispatchEvent(new Event('token-updated'));
+      
       return data;
     } catch (error) {
       console.error("❌ Error en login:", error);

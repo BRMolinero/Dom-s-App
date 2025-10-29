@@ -22,8 +22,27 @@ const AdminPanel = () => {
   } = useSensorData();
 
   // Mostrar loading solo si no hay conexión y no hay datos
-  if (!isConnected && !lastUpdate) {
+  // Agregar un timeout para que no quede cargando indefinidamente
+  const [hasTimedOut, setHasTimedOut] = React.useState(false);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isConnected && !lastUpdate) {
+        setHasTimedOut(true);
+      }
+    }, 10000); // 10 segundos de timeout
+    
+    return () => clearTimeout(timer);
+  }, [isConnected, lastUpdate]);
+  
+  // Si está cargando, mostrar mensaje
+  if (!isConnected && !lastUpdate && !hasTimedOut) {
     return <LoadingMessage message="Conectando con sensores..." />;
+  }
+  
+  // Si no hay conexión y no hay datos después del timeout, mostrar datos por defecto
+  if (!isConnected && !lastUpdate && hasTimedOut) {
+    console.warn('⚠️ No se pudo conectar al WebSocket después de 10 segundos, mostrando datos por defecto');
   }
 
   return (
