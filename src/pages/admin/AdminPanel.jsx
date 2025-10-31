@@ -91,7 +91,7 @@ const AdminPanel = () => {
           )}
 
           {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
             {/* Calidad Ambiental */}
             <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
               <div className="flex items-center justify-between mb-6">
@@ -176,9 +176,9 @@ const AdminPanel = () => {
             </div>
 
             {/* Sensor Cards */}
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6 h-full">
               {/* Temperature Card */}
-              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-[#D95766] to-[#F6963F] rounded-xl flex items-center justify-center">
@@ -188,7 +188,6 @@ const AdminPanel = () => {
                       <h3 className="text-lg font-bold text-[#274181] group-hover:text-[#D95766] transition-colors duration-300">
                         Temperatura
                       </h3>
-                      <p className="text-sm text-[#274181]/70">Rango óptimo: 18-25°C</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -202,14 +201,10 @@ const AdminPanel = () => {
                     style={{ width: `${getTemperaturePercentage() * 2}%` }}
                   />
                 </div>
-
-                <p className="text-xs text-[#274181]/60">
-                  La temperatura ambiente afecta el confort y la eficiencia energética.
-                </p>
               </div>
 
               {/* Humidity Card */}
-              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-[#95CDD1] to-[#274181] rounded-xl flex items-center justify-center">
@@ -217,7 +212,6 @@ const AdminPanel = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-[#274181]">Humedad</h3>
-                      <p className="text-sm text-[#274181]/70">Rango óptimo: 40-60%</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -231,22 +225,17 @@ const AdminPanel = () => {
                     style={{ width: `${getHumidityPercentage()}%` }}
                   />
                 </div>
-
-                <p className="text-xs text-[#274181]/60">
-                  La humedad relativa influye en la calidad del aire y el confort térmico.
-                </p>
               </div>
 
-              {/* CO Card */}
-              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20">
+              {/* Gases Tóxicos Card */}
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-[#F6963F] to-[#D95766] rounded-xl flex items-center justify-center">
                       <FaWind className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-[#274181]">Monóxido de Carbono</h3>
-                      <p className="text-sm text-[#274181]/70">Rango seguro: 0-9 ppm</p>
+                      <h3 className="text-lg font-bold text-[#274181]">Gases Tóxicos</h3>
                     </div>
                   </div>
                   <div className="text-right">
@@ -260,10 +249,6 @@ const AdminPanel = () => {
                     style={{ width: `${getCOPercentage()}%` }}
                   />
                 </div>
-
-                <p className="text-xs text-[#274181]/60">
-                  El CO es un gas tóxico que puede causar problemas de salud graves.
-                </p>
               </div>
             </div>
           </div>

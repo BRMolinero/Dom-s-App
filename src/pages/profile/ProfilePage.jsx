@@ -366,7 +366,7 @@ const ProfilePage = () => {
                   disabled={loading}
                   className="flex-1 bg-gradient-to-r from-[#0DC0E8] to-[#274181] text-white py-3 px-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/30 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  {loading ? 'Guardando...' : 'Guardar'}
                 </button>
               </>
             )}
