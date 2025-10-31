@@ -11,6 +11,7 @@ import {
 } from '../../api/sos';
 import { getProfileApi, updateProfileApi } from '../../api/auth';
 import CustomAlert from '../../components/CustomAlert';
+import LoadingMessage from '../../components/LoadingMessage';
 
 const ProfilePage = () => {
   const { user, setUser } = useAuth();
@@ -220,7 +221,7 @@ const ProfilePage = () => {
   };
 
   if (loadingProfile || !profileData) {
-    return null;
+    return <LoadingMessage message="Cargando perfil..." />;
   }
 
   return (

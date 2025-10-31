@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { loginApi, logoutApi, refreshApi } from "../api/auth";
+import { loginApi, logoutApi, refreshApi, getProfileApi } from "../api/auth";
+import { obtenerConfiguracionSOS } from "../api/sos";
 import { bindAuth } from "../api/authBridge";
 
 const AuthContext = createContext(null);
@@ -28,9 +29,40 @@ export function AuthProvider({ children }) {
       
       console.log("✅ Login exitoso, guardando token y usuario");
       setAccessToken(data.accessToken);
-      setUser(data.usuario ?? null);
       localStorage.setItem("accessToken", data.accessToken);
-      if (data.usuario) localStorage.setItem("user", JSON.stringify(data.usuario));
+      
+      // Paso 1: establecer usuario inicial si vino en la respuesta
+      const initialUser = data.usuario ?? null;
+      if (initialUser) {
+        setUser(initialUser);
+        localStorage.setItem("user", JSON.stringify(initialUser));
+      } else {
+        setUser(null);
+        localStorage.removeItem("user");
+      }
+      
+      // Paso 2: cargar perfil y configuración SOS desde el backend
+      try {
+        const [profile, sosConfig] = await Promise.all([
+          getProfileApi().catch(() => null),
+          obtenerConfiguracionSOS().catch(() => ({ telefono_sos: "" }))
+        ]);
+        const telefonoSOS = sosConfig?.telefono_sos || "";
+        if (telefonoSOS) {
+          localStorage.setItem("telefono_sos", telefonoSOS);
+        } else {
+          localStorage.removeItem("telefono_sos");
+        }
+        const mergedUser = {
+          ...(initialUser || {}),
+          ...(profile || {}),
+          telefono_sos: telefonoSOS
+        };
+        setUser(mergedUser);
+        localStorage.setItem("user", JSON.stringify(mergedUser));
+      } catch (e) {
+        console.log("ℹ️ No se pudo cargar perfil/SOS tras login, se mantiene usuario inicial");
+      }
       
       // Disparar evento para que otros componentes se enteren del token
       window.dispatchEvent(new Event('token-updated'));

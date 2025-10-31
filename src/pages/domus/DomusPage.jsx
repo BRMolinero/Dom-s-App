@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp } from 'react-icons/fa';
 import CustomAlert from '../../components/CustomAlert';
 import { useAuth } from '../../context/AuthContext';
 
 const DomusPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchSelected, setSearchSelected] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -77,8 +79,15 @@ const DomusPage = () => {
     // Formato: https://wa.me/[número]?text=[mensaje]
     const whatsappUrl = `https://wa.me/${sosPhoneNumber.replace(/[^\d]/g, '')}?text=${defaultMessage}`;
     
-    // Abrir WhatsApp en la misma pestaña (no abre nueva pestaña)
-    window.location.href = whatsappUrl;
+    // 1) Llevar la SPA al inicio para que, al volver desde WhatsApp, quede en Home
+    // Usamos replace para no agregar historial extra
+    navigate('/', { replace: true });
+    
+    // 2) Abrir WhatsApp en la misma pestaña
+    // Pequeño delay para asegurar que el enrutado se asiente antes de salir de la SPA
+    setTimeout(() => {
+      window.location.assign(whatsappUrl);
+    }, 50);
   };
 
   const handleObjetoClick = (objeto) => {
@@ -143,7 +152,8 @@ const DomusPage = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
         {/* Pictogramas Principales */}
         <div className="flex flex-col sm:flex-row justify-center items-center space-y-8 sm:space-y-0 sm:space-x-12 max-w-4xl mx-auto">
-          {/* Pictograma Buscar */}
+          {/* Pictograma Buscar (oculto) */}
+          {/*
           <button 
             onClick={handleSearchClick}
             className={`group relative bg-white/80 backdrop-blur-md rounded-3xl p-10 shadow-2xl border-2 border-[#95CDD1] hover:shadow-[#0DC0E8]/20 hover:shadow-3xl transition-all duration-700 w-80 sm:w-80 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8] focus:ring-opacity-70 overflow-hidden ${searchSelected ? 'ring-4 ring-[#0DC0E8] ring-opacity-70 border-[#0DC0E8] shadow-[#0DC0E8]/20' : ''}`}
@@ -164,6 +174,7 @@ const DomusPage = () => {
               </div>
             </div>
           </button>
+          */}
 
           {/* Pictograma SOS */}
           <button 
