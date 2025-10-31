@@ -149,7 +149,7 @@ const DomusPage = () => {
         <div className="absolute bottom-20 right-20 w-20 h-20 bg-[#D95766] rounded-full blur-2xl"></div>
       </div>
       
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 sm:pt-28 pb-12">
         {/* Pictogramas Principales */}
         <div className="flex flex-col sm:flex-row justify-center items-center space-y-8 sm:space-y-0 sm:space-x-12 max-w-4xl mx-auto">
           {/* Pictograma Buscar (oculto) */}

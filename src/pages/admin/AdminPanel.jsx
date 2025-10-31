@@ -59,7 +59,7 @@ const AdminPanel = () => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 pt-20 pb-8 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 pt-8 sm:pt-10 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-[#274181] mb-2">
