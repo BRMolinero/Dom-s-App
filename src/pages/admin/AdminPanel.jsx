@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 import LoadingMessage from '../../components/LoadingMessage';
 import { useSensorData } from '../../context/SensorContext';
+import AlertasPanel from '../../components/AlertasPanel';
 
 const AdminPanel = () => {
   const {
@@ -96,8 +97,8 @@ const AdminPanel = () => {
             <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#0DC0E8] to-[#274181] rounded-2xl flex items-center justify-center shadow-lg">
-                    <FaLeaf className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-gradient-to-r from-[#0DC0E8] to-[#274181] rounded-2xl shadow-lg mt-2 flex items-center justify-center">
+                    <FaLeaf className="w-6 h-6 text-white drop-shadow-lg flex items-center justify-center" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-[#274181]">Calidad Ambiental</h2>
@@ -181,8 +182,8 @@ const AdminPanel = () => {
               <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-[#D95766] to-[#F6963F] rounded-xl flex items-center justify-center">
-                      <FaThermometerHalf className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#274181] to-[#D95766] rounded-xl mt-2 flex items-center justify-center">
+                      <FaThermometerHalf className="w-5 h-5 text-white drop-shadow-lg flex items-center justify-center" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-[#274181] group-hover:text-[#D95766] transition-colors duration-300">
@@ -197,7 +198,7 @@ const AdminPanel = () => {
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                   <div
-                    className="h-3 rounded-full bg-gradient-to-r from-[#D95766] to-[#F6963F] transition-all duration-1000 ease-out"
+                    className="h-3 rounded-full bg-gradient-to-r from-[#274181] to-[#D95766] transition-all duration-1000 ease-out"
                     style={{ width: `${getTemperaturePercentage() * 2}%` }}
                   />
                 </div>
@@ -207,8 +208,8 @@ const AdminPanel = () => {
               <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-[#95CDD1] to-[#274181] rounded-xl flex items-center justify-center">
-                      <FaTint className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#95CDD1] to-[#274181] rounded-xl mt-2 flex items-center justify-center">
+                      <FaTint className="w-5 h-5 text-white drop-shadow-lg flex items-center justify-center" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-[#274181]">Humedad</h3>
@@ -231,8 +232,8 @@ const AdminPanel = () => {
               <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border border-white/20 flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-[#F6963F] to-[#D95766] rounded-xl flex items-center justify-center">
-                      <FaWind className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-r from-[#F6963F] to-[#D95766] rounded-xl mt-2 flex items-center justify-center">
+                      <FaWind className="w-5 h-5 text-white drop-shadow-lg flex items-center justify-center" />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-[#274181]">Gases Tóxicos</h3>
@@ -251,6 +252,11 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Alertas Section */}
+          <div className="mt-8">
+            <AlertasPanel />
           </div>
         </div>
       </div>

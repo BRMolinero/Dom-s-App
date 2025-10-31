@@ -25,3 +25,22 @@ h1, h2, h3, h4, h5, h6 {
 body, p, span, div, button, input, textarea, select {
   font-family: 'Stinger Fit', sans-serif;
 }
+
+/* Animations for Alert Modal */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
+}

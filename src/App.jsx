@@ -6,6 +6,7 @@ import RegisterPage from "./pages/register/RegisterPage.jsx";
 import ProfilePage from "./pages/profile/ProfilePage.jsx";
 import Layout from "./components/Layout.jsx";
 import { SensorProvider } from "./context/SensorContext";
+import { AlertasProvider } from "./context/AlertasContext";
 
 const router = createBrowserRouter([
   {
@@ -24,7 +25,9 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <SensorProvider>
-      <RouterProvider router={router} />
+      <AlertasProvider>
+        <RouterProvider router={router} />
+      </AlertasProvider>
     </SensorProvider>
   );
 }

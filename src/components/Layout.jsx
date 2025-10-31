@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import MainNavbar from "./MainNavbar";
 import MainFooter from "./MainFooter";
+import ModalAlertaCritica from "./ModalAlertaCritica";
 
 export default function Layout() {
   const location = useLocation();
@@ -71,6 +72,8 @@ export default function Layout() {
         <Outlet />
       </main>
       <MainFooter />
+      {/* Modal de alertas críticas - aparece en todas las páginas */}
+      <ModalAlertaCritica />
     </div>
   );
 }
