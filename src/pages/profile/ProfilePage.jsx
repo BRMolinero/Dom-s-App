@@ -23,17 +23,32 @@ const ProfilePage = () => {
   });
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [updatingData, setUpdatingData] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showAlert, setShowAlert] = useState(false);
   const [alertConfig, setAlertConfig] = useState({});
 
-  // Cargar datos del perfil desde el backend al montar el componente
+  // Inicializar formulario inmediatamente con datos del contexto
   useEffect(() => {
+    if (user) {
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        telefono_sos: user.telefono_sos || ''
+      });
+      // Inicializar profileData con datos del contexto
+      setProfileData({
+        username: user.username || '',
+        email: user.email || '',
+        telefono_sos: user.telefono_sos || ''
+      });
+    }
+    // Cargar datos actualizados del backend en segundo plano
     cargarPerfilUsuario();
   }, []);
 
-  // Inicializar datos del formulario cuando se cargan los datos del perfil
+  // Actualizar datos del formulario cuando se cargan los datos del perfil
   useEffect(() => {
     if (profileData) {
       setFormData({
@@ -46,7 +61,7 @@ const ProfilePage = () => {
 
   const cargarPerfilUsuario = async () => {
     try {
-      setLoadingProfile(true);
+      setUpdatingData(true);
       
       // Cargar datos del perfil desde el backend
       const profileData = await getProfileApi();
@@ -57,14 +72,14 @@ const ProfilePage = () => {
       
     } catch (err) {
       console.error('Error al cargar perfil del usuario:', err);
-      setMessage({ type: 'error', text: 'Error al cargar los datos del perfil' });
+      setMessage({ type: 'error', text: 'Error al cargar los datos del perfil. Mostrando datos guardados localmente.' });
       
       // Fallback a datos del contexto si falla el backend
       if (user) {
         setProfileData(user);
       }
     } finally {
-      setLoadingProfile(false);
+      setUpdatingData(false);
     }
   };
 
@@ -220,7 +235,8 @@ const ProfilePage = () => {
     }
   };
 
-  if (loadingProfile || !profileData) {
+  // Si no hay datos del usuario ni del contexto, mostrar loading
+  if (!user && !profileData) {
     return <LoadingMessage message="Cargando perfil..." />;
   }
 
@@ -233,6 +249,15 @@ const ProfilePage = () => {
             Mi Perfil
           </h1>
         </div>
+
+        {/* Indicador de actualización sutil */}
+        {updatingData && (
+          <div className="text-center mb-4">
+            <p className="text-xs text-[#274181]/60 italic">
+              Actualizando datos...
+            </p>
+          </div>
+        )}
 
         {/* Descripción */}
         <div className="text-center mb-6">
