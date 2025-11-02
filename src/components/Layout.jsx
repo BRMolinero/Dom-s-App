@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import MainNavbar from "./MainNavbar";
 import MainFooter from "./MainFooter";
 import ModalAlertaCritica from "./ModalAlertaCritica";
-import PWAUpdatePrompt from "./PWAUpdatePrompt";
 
 export default function Layout() {
   const location = useLocation();
@@ -75,8 +74,6 @@ export default function Layout() {
       <MainFooter />
       {/* Modal de alertas críticas - aparece en todas las páginas */}
       <ModalAlertaCritica />
-      {/* Notificación de actualizaciones PWA */}
-      <PWAUpdatePrompt />
     </div>
   );
 }
