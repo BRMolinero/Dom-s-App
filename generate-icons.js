@@ -13,8 +13,11 @@ const fallbackImage = join(publicDir, 'favicon.png');
  * @param {string} imagePath - Ruta de la imagen fuente
  */
 async function generateAdaptiveIcon(size, outputPath, imagePath) {
-  // Padding del 15% para que el logo no quede pegado a los bordes
-  const padding = Math.floor(size * 0.15);
+  // Padding del 10% para que el logo sea más grande y visible
+  // Cambia este valor (0.10) para ajustar el tamaño:
+  // - Menor valor (ej: 0.05) = logo más grande
+  // - Mayor valor (ej: 0.20) = logo más pequeño
+  const padding = Math.floor(size * 0.10);
   const logoSize = size - (padding * 2);
   
   // Obtener metadata de la imagen original
