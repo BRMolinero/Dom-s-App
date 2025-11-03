@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp } from 'react-icons/fa';
+import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp, FaStop, FaPlay } from 'react-icons/fa';
 import CustomAlert from '../../components/CustomAlert';
 import { useAuth } from '../../context/AuthContext';
+import { pararRobot, reanudarRobot } from '../../api/robot';
+import { message } from 'antd';
 
 const DomusPage = () => {
   const { user } = useAuth();
@@ -17,6 +19,8 @@ const DomusPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [alertConfig, setAlertConfig] = useState({});
+  const [cargandoParar, setCargandoParar] = useState(false);
+  const [cargandoReanudar, setCargandoReanudar] = useState(false);
 
   // Eliminar función de configuración global ya que solo se configura desde perfil
 
@@ -121,6 +125,46 @@ const DomusPage = () => {
     setSelectedObjeto(null);
   };
 
+  // Manejar parar robot
+  const handlePararRobot = async () => {
+    console.log(' Botón Parar seleccionado');
+    setCargandoParar(true);
+    setCargandoReanudar(true); // Deshabilitar ambos durante la request
+    try {
+      await pararRobot();
+      console.log(' Robot parado exitosamente');
+      message.success('Robot detenido correctamente');
+      // TODO: Si hay websocket/estado global del robot, refrescar aquí
+    } catch (error) {
+      console.error(' Error al parar el robot:', error);
+      const errorMessage = error.message || 'Error al detener el robot';
+      message.error(errorMessage);
+    } finally {
+      setCargandoParar(false);
+      setCargandoReanudar(false);
+    }
+  };
+
+  // Manejar reanudar robot
+  const handleReanudarRobot = async () => {
+    console.log(' Botón Reanudar seleccionado');
+    setCargandoParar(true); // Deshabilitar ambos durante la request
+    setCargandoReanudar(true);
+    try {
+      await reanudarRobot();
+      console.log(' Robot reanudado exitosamente');
+      message.success('Robot reanudado correctamente');
+      // TODO: Si hay websocket/estado global del robot, refrescar aquí
+    } catch (error) {
+      console.error(' Error al reanudar el robot:', error);
+      const errorMessage = error.message || 'Error al reanudar el robot';
+      message.error(errorMessage);
+    } finally {
+      setCargandoParar(false);
+      setCargandoReanudar(false);
+    }
+  };
+
   return (
     <div className="domus-page min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
       {/* Mensaje de Éxito */}
@@ -194,6 +238,63 @@ const DomusPage = () => {
                 <div className="mt-3 text-sm font-semibold uppercase tracking-wider bg-gradient-to-r from-[#F6963F] to-[#D95766] bg-clip-text text-transparent transition-all duration-500">
                   Contacto de emergencia
                 </div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Botones de control del robot - Debajo de la card SOS */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-16 mb-4">
+          {/* Botón Parar */}
+          <button
+            onClick={handlePararRobot}
+            disabled={cargandoParar || cargandoReanudar}
+            className={`group relative bg-white/80 backdrop-blur-md rounded-2xl px-6 py-4 shadow-xl border-2 border-[#D95766] hover:shadow-[#D95766]/20 hover:shadow-2xl transition-all duration-500 focus:outline-none focus:ring-4 focus:ring-[#D95766]/70 overflow-hidden ${
+              cargandoParar || cargandoReanudar ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-[#D95766]/5 to-[#F6963F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <div className="relative flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-500 ${
+                cargandoParar || cargandoReanudar ? 'bg-gray-300' : 'bg-gradient-to-r from-[#D95766] to-[#F6963F]'
+              }`}>
+                <FaStop className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-lg font-bold text-[#D95766]">
+                  {cargandoParar || cargandoReanudar ? 'Procesando...' : 'Parar'}
+                </h3>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Detener robot
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Botón Reanudar */}
+          <button
+            onClick={handleReanudarRobot}
+            disabled={cargandoParar || cargandoReanudar}
+            className={`group relative bg-white/80 backdrop-blur-md rounded-2xl px-6 py-4 shadow-xl border-2 border-[#0DC0E8] hover:shadow-[#0DC0E8]/20 hover:shadow-2xl transition-all duration-500 focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/70 overflow-hidden ${
+              cargandoParar || cargandoReanudar ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-[#0DC0E8]/5 to-[#274181]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <div className="relative flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-500 ${
+                cargandoParar || cargandoReanudar ? 'bg-gray-300' : 'bg-gradient-to-r from-[#0DC0E8] to-[#274181]'
+              }`}>
+                <FaPlay className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-lg font-bold text-[#0DC0E8]">
+                  {cargandoParar || cargandoReanudar ? 'Procesando...' : 'Reanudar'}
+                </h3>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Reanudar robot
+                </p>
               </div>
             </div>
           </button>

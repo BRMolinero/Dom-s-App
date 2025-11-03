@@ -44,3 +44,43 @@ body, p, span, div, button, input, textarea, select {
     transform: scale(1);
   }
 }
+
+/* Footer mobile spacing adjustments */
+@media (max-width: 767px) {
+  .main-footer {
+    padding-top: 12px !important;
+  }
+  
+  .footer-grid {
+    gap: 12px !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+  }
+  
+  .footer-logo-container {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  
+  .footer-logo {
+    margin-bottom: -20px !important;
+  }
+  
+  .footer-contact-column,
+  .footer-siguenos-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 16px !important;
+  }
+  
+  .footer-contact-title {
+    margin-top: 4px !important;
+    text-align: left !important;
+  }
+  
+  .footer-siguenos-title {
+    margin-top: 16px !important;
+    text-align: left !important;
+  }
+}

@@ -61,38 +61,47 @@ const MainFooter = () => {
   ];
 
   return (
-    <footer style={{ 
-      backgroundColor: '#FFFFFF', 
-      color: '#0B3C5D', 
-      padding: '48px 0 24px',
-      marginTop: 'auto',
-      borderTop: '1px solid #E5E7EB'
-    }}>
+    <footer 
+      className="main-footer"
+      style={{ 
+        backgroundColor: '#FFFFFF', 
+        color: '#0B3C5D', 
+        padding: '48px 0 24px',
+        marginTop: 'auto',
+        borderTop: '1px solid #E5E7EB'
+      }}
+    >
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         {/* Grid Layout */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-          gap: '32px',
-          marginBottom: '32px'
-        }}>
+        <div 
+          className="footer-grid"
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: '32px',
+            marginBottom: '32px'
+          }}
+        >
           {/* Brand Column */}
-          <div style={{ textAlign: 'center' }}>
+          <div className="footer-logo-container" style={{ textAlign: 'center' }}>
             <img 
               src="/logo domus robotOK.png" 
               alt="Domüs Robot" 
               style={{ width: 200, height: 200, objectFit: 'contain' }}
+              className="footer-logo"
             />
           </div>
 
           {/* Contact Information Column */}
-          <div>
+          <div className="footer-contact-column">
             <h5 style={{ 
               color: '#0B3C5D', 
               marginBottom: 16,
               fontSize: '1.1rem',
               fontWeight: 500
-            }}>
+            }}
+            className="footer-contact-title"
+            >
               Contacto
             </h5>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -169,13 +178,16 @@ const MainFooter = () => {
           </div>
 
           {/* Social Media Column */}
-          <div>
-            <h5 style={{ 
-              color: '#0B3C5D', 
-              marginBottom: 16,
-              fontSize: '1.1rem',
-              fontWeight: 500
-            }}>
+          <div className="footer-siguenos-column">
+            <h5 
+              className="footer-siguenos-title"
+              style={{ 
+                color: '#0B3C5D', 
+                marginBottom: 16,
+                fontSize: '1.1rem',
+                fontWeight: 500
+              }}
+            >
               Síguenos
             </h5>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
