@@ -32,7 +32,7 @@ export default function Layout() {
   }, [bootstrapped, isAuthenticated, isAuthPage, navigate]);
 
   if (isAuthPage) {
-    // Para páginas de autenticación, mostrar el contenido
+    // Para páginas de autenticación, mostrar solo el contenido
     return <Outlet />;
   }
 
