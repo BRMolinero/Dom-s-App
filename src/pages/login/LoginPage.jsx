@@ -7,6 +7,8 @@ import {
   FaUser,
   FaLock,
   FaRobot,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import "./LoginPage.css";
 import RobotBackground from "../../components/RobotBackground";
@@ -15,6 +17,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   // refs para animaciones
@@ -68,6 +71,14 @@ export default function LoginPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    
+    // Validación manual de campos
+    if (!form.username || !form.password) {
+      setError("Por favor, completá todos los campos.");
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       console.log("📋 Enviando credenciales...", { email: form.username });
@@ -166,15 +177,28 @@ export default function LoginPage() {
                 <FaLock className="text-[#274181] text-lg" />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
                 value={form.password}
                 onChange={onChange("password")}
-                required
-                className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                className="w-full pl-14 pr-12 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200 password-no-validation-icon"
                 placeholder="Contraseña"
                 autoComplete="current-password"
+                onInvalid={(e) => e.preventDefault()}
+                style={{ paddingRight: '48px' }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-8 h-8 text-[#274181] hover:text-[#0DC0E8] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0DC0E8] focus:ring-offset-1 rounded"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? (
+                  <FaEyeSlash className="text-xl" />
+                ) : (
+                  <FaEye className="text-xl" />
+                )}
+              </button>
             </div>
           </div>
 

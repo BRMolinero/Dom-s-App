@@ -437,3 +437,45 @@ svg.animate-spin {
 .domus-login-container svg {
   color: #274181;
 }
+
+/* Ocultar iconos de validación del navegador en el campo de contraseña */
+.password-no-validation-icon::-webkit-validation-bubble-icon,
+.password-no-validation-icon::-webkit-validation-bubble,
+.password-no-validation-icon::-webkit-validation-bubble-arrow,
+.domus-login-container input[type="password"]::-webkit-validation-bubble-icon,
+.domus-login-container input[type="password"]::-webkit-validation-bubble,
+.domus-login-container input[type="password"]::-webkit-validation-bubble-arrow {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ocultar cualquier pseudo-elemento que agregue el navegador */
+.domus-login-container input[type="password"]::after,
+.domus-login-container input[type="password"]::before,
+.password-no-validation-icon::after,
+.password-no-validation-icon::before {
+  display: none !important;
+  content: none !important;
+  visibility: hidden !important;
+}
+
+/* Desactivar la validación visual del navegador */
+.domus-login-container input[type="password"]:invalid {
+  box-shadow: none !important;
+}
+
+/* Asegurar que no aparezcan iconos cuando hay error */
+.domus-login-container form:has(.bg-red-50) input[type="password"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+.domus-login-container form:has(.bg-red-50) input[type="password"]::-webkit-inner-spin-button,
+.domus-login-container form:has(.bg-red-50) input[type="password"]::-webkit-outer-spin-button,
+.domus-login-container form:has(.bg-red-50) input[type="password"]::-webkit-clear-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}

@@ -7,6 +7,8 @@ import {
   FaCheckCircle,
   FaRobot,
   FaEnvelope,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
@@ -23,6 +25,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -194,16 +197,29 @@ export default function RegisterPage() {
               <div className="relative">
                 <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#274181] z-10 w-4 h-4 flex items-center justify-center" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   value={form.password}
                   onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
                   required
                   minLength={8}
-                  className="w-full pl-14 pr-4 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
+                  className="w-full pl-14 pr-12 py-4 bg-white border-3 border-[#274181] rounded-xl text-[#274181] placeholder-[#274181]/80 outline-none text-base focus:border-[#F6963F] focus:bg-gray-50 focus:shadow-lg transition-all duration-200"
                   placeholder="Contraseña"
                   autoComplete="new-password"
+                  style={{ paddingRight: '48px' }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-8 h-8 text-[#274181] hover:text-[#0DC0E8] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0DC0E8] focus:ring-offset-1 rounded"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? (
+                    <FaEyeSlash className="text-xl" />
+                  ) : (
+                    <FaEye className="text-xl" />
+                  )}
+                </button>
               </div>
             </div>
 
