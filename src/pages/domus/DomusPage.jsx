@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp, FaStop, FaPlay } from 'react-icons/fa';
+import { FaSearch, FaPhone, FaKey, FaCapsules, FaWineBottle, FaTimes, FaGlasses, FaWhatsapp /*, FaStop, FaPlay */ } from 'react-icons/fa';
 import CustomAlert from '../../components/CustomAlert';
 import { useAuth } from '../../context/AuthContext';
-import { pararRobot, reanudarRobot } from '../../api/robot';
-import { message } from 'antd';
+// import { pararRobot, reanudarRobot } from '../../api/robot';
+// import { message } from 'antd';
 
 const DomusPage = () => {
   const { user } = useAuth();
@@ -19,8 +19,8 @@ const DomusPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [alertConfig, setAlertConfig] = useState({});
-  const [cargandoParar, setCargandoParar] = useState(false);
-  const [cargandoReanudar, setCargandoReanudar] = useState(false);
+  // const [cargandoParar, setCargandoParar] = useState(false);
+  // const [cargandoReanudar, setCargandoReanudar] = useState(false);
 
   // Eliminar función de configuración global ya que solo se configura desde perfil
 
@@ -125,45 +125,85 @@ const DomusPage = () => {
     setSelectedObjeto(null);
   };
 
-  // Manejar parar robot
+  // Manejar parar robot - COMENTADO
+  /*
   const handlePararRobot = async () => {
     console.log(' Botón Parar seleccionado');
     setCargandoParar(true);
     setCargandoReanudar(true); // Deshabilitar ambos durante la request
     try {
-      await pararRobot();
-      console.log(' Robot parado exitosamente');
-      message.success('Robot detenido correctamente');
-      // TODO: Si hay websocket/estado global del robot, refrescar aquí
+      const response = await pararRobot();
+      console.log('Robot parado exitosamente:', {
+        exito: response?.exito,
+        mensaje: response?.mensaje,
+        estado: response?.estado,
+        dispositivo_id: response?.dispositivo_id,
+        comando_mqtt: response?.comando_mqtt,
+        timestamp: response?.timestamp
+      });
+      
+      // Verificar que la respuesta fue exitosa (el backend devuelve exito: true)
+      if (response?.exito !== false) {
+        // Usar el mensaje del backend si está disponible (formato: ' Robot apagado correctamente')
+        const mensaje = response?.mensaje || response?.message || 'Robot apagado correctamente';
+        message.success(mensaje);
+      } else {
+        // Si exito es false, mostrar mensaje de error
+        const errorMsg = response?.mensaje || response?.error || 'Error al apagar el robot';
+        message.error(errorMsg);
+      }
+      
+      // TODO: Si hay websocket/estado global del robot, refrescar aquí con response.estado
     } catch (error) {
       console.error(' Error al parar el robot:', error);
-      const errorMessage = error.message || 'Error al detener el robot';
+      const errorMessage = error.response?.data?.error || error.message || 'Error al apagar el robot';
       message.error(errorMessage);
     } finally {
       setCargandoParar(false);
       setCargandoReanudar(false);
     }
   };
+  */
 
-  // Manejar reanudar robot
+  // Manejar reanudar robot - COMENTADO
+  /*
   const handleReanudarRobot = async () => {
     console.log(' Botón Reanudar seleccionado');
     setCargandoParar(true); // Deshabilitar ambos durante la request
     setCargandoReanudar(true);
     try {
-      await reanudarRobot();
-      console.log(' Robot reanudado exitosamente');
-      message.success('Robot reanudado correctamente');
-      // TODO: Si hay websocket/estado global del robot, refrescar aquí
+      const response = await reanudarRobot();
+      console.log(' Robot reanudado exitosamente:', {
+        exito: response?.exito,
+        mensaje: response?.mensaje,
+        estado: response?.estado,
+        dispositivo_id: response?.dispositivo_id,
+        comando_mqtt: response?.comando_mqtt,
+        timestamp: response?.timestamp
+      });
+      
+      // Verificar que la respuesta fue exitosa (el backend devuelve exito: true)
+      if (response?.exito !== false) {
+        // Usar el mensaje del backend si está disponible (formato: ' Robot encendido correctamente')
+        const mensaje = response?.mensaje || response?.message || 'Robot encendido correctamente';
+        message.success(mensaje);
+      } else {
+        // Si exito es false, mostrar mensaje de error
+        const errorMsg = response?.mensaje || response?.error || 'Error al encender el robot';
+        message.error(errorMsg);
+      }
+      
+      // TODO: Si hay websocket/estado global del robot, refrescar aquí con response.estado
     } catch (error) {
       console.error(' Error al reanudar el robot:', error);
-      const errorMessage = error.message || 'Error al reanudar el robot';
+      const errorMessage = error.response?.data?.error || error.message || 'Error al encender el robot';
       message.error(errorMessage);
     } finally {
       setCargandoParar(false);
       setCargandoReanudar(false);
     }
   };
+  */
 
   return (
     <div className="domus-page min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
@@ -243,9 +283,9 @@ const DomusPage = () => {
           </button>
         </div>
 
-        {/* Botones de control del robot - Debajo de la card SOS */}
+        {/* Botones de control del robot - COMENTADOS */}
+        {/* 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-16 mb-4">
-          {/* Botón Parar */}
           <button
             onClick={handlePararRobot}
             disabled={cargandoParar || cargandoReanudar}
@@ -272,7 +312,6 @@ const DomusPage = () => {
             </div>
           </button>
 
-          {/* Botón Reanudar */}
           <button
             onClick={handleReanudarRobot}
             disabled={cargandoParar || cargandoReanudar}
@@ -299,6 +338,7 @@ const DomusPage = () => {
             </div>
           </button>
         </div>
+        */}
 
         {/* Pictogramas de búsqueda - Solo en desktop */}
         {searchSelected && !isMobile && (

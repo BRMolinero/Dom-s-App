@@ -1,38 +1,40 @@
 import { api } from './http';
 
 /**
- * Parar el robot
- * @returns {Promise<object>} Respuesta del servidor
+ * Parar el robot (usando endpoint /apagar)
+ * @param {number} dispositivo_id - ID del dispositivo (por defecto 1)
+ * @returns {Promise<object>} Respuesta del servidor con estructura: { exito, mensaje, estado, dispositivo_id, comando_mqtt, timestamp }
  */
-export async function pararRobot() {
+export async function pararRobot(dispositivo_id = 1) {
   try {
-    const { data } = await api.post('/robot/parar');
+    const { data } = await api.post('/apagar', { dispositivo_id });
+    // El backend devuelve: { exito, mensaje, estado, dispositivo_id, comando_mqtt, timestamp }
     return data;
   } catch (error) {
     console.error('Error al parar el robot:', error);
-    throw new Error(error.response?.data?.error || error.response?.data?.message || 'No se pudo parar el robot');
+    // El backend puede devolver { error, detalle } o { error } o { message }
+    const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Error al apagar robot';
+    const detalle = error.response?.data?.detalle;
+    throw new Error(detalle ? `${errorMsg}: ${detalle}` : errorMsg);
   }
 }
 
 /**
- * Reanudar el robot (usar endpoint /robot/mover)
- * @returns {Promise<object>} Respuesta del servidor
+ * Reanudar/Encender el robot (usando endpoint /encender)
+ * @param {number} dispositivo_id - ID del dispositivo (por defecto 1)
+ * @returns {Promise<object>} Respuesta del servidor con estructura: { exito, mensaje, estado, dispositivo_id, comando_mqtt, timestamp }
  */
-export async function reanudarRobot() {
+export async function reanudarRobot(dispositivo_id = 1) {
   try {
-    // Payload mínimo para reanudar: mover hacia adelante a velocidad baja
-    // Si el backend requiere otros campos, ajustar según la respuesta del servidor
-    const payload = {
-      direccion: 'adelante',
-      velocidad: 50, // Velocidad baja por seguridad
-      modo: 'auto' // Si el backend lo soporta
-    };
-    
-    const { data } = await api.post('/robot/mover', payload);
+    const { data } = await api.post('/encender', { dispositivo_id });
+    // El backend devuelve: { exito, mensaje, estado, dispositivo_id, comando_mqtt, timestamp }
     return data;
   } catch (error) {
     console.error('Error al reanudar el robot:', error);
-    throw new Error(error.response?.data?.error || error.response?.data?.message || 'No se pudo reanudar el robot');
+    // El backend puede devolver { error, detalle } o { error } o { message }
+    const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Error al encender robot';
+    const detalle = error.response?.data?.detalle;
+    throw new Error(detalle ? `${errorMsg}: ${detalle}` : errorMsg);
   }
 }
 
