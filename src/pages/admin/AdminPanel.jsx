@@ -376,10 +376,8 @@ const AdminPanel = () => {
     if (fueraDeRango) {
       try {
         // Guardar la hora de creación de la alerta (misma que se mostrará en el historial)
-        // Usar zona horaria de Argentina
         const fechaCreacion = new Date();
         const fechaFormateada = fechaCreacion.toLocaleString('es-AR', {
-          timeZone: 'America/Argentina/Buenos_Aires',
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',

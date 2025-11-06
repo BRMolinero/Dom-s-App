@@ -182,7 +182,6 @@ const AlertasPanel = () => {
           alertas.map((alerta) => {
             const colors = getSeveridadColors(alerta.severidad);
             const fecha = new Date(alerta.created_at).toLocaleString('es-AR', {
-              timeZone: 'America/Argentina/Buenos_Aires',
               day: '2-digit',
               month: '2-digit',
               year: 'numeric',
