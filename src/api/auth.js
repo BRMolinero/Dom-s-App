@@ -1,4 +1,5 @@
 import { api } from "./http";
+import { getAuth } from "./authBridge";
 
 export async function loginApi({ username, password }) {
   try {
@@ -56,7 +57,15 @@ export async function registerApi({ username, email, password }) {
 }
 
 export async function refreshApi() {
-  const { data } = await api.post("/auth/refresh", {});
+  // Obtener el token del localStorage o del auth bridge
+  const { accessToken } = getAuth() || {};
+  const tokenFromLS = localStorage.getItem("accessToken") || accessToken;
+  
+  // El endpoint /auth/refresh requiere el token, pero el interceptor no lo agrega para URLs de auth
+  // Por eso lo agregamos manualmente aquí
+  const { data } = await api.post("/auth/refresh", {}, {
+    headers: tokenFromLS ? { Authorization: `Bearer ${tokenFromLS}` } : {}
+  });
   return data;
 }
 

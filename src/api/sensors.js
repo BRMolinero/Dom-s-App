@@ -85,6 +85,24 @@ export async function getPublicStats() {
 }
 
 /**
+ * Obtener los últimos valores de temperatura, humedad y gas del robot MQTT
+ * @returns {Promise<Object>} Objeto con { temperatura, humedad, gas }
+ */
+export async function getUltimosValoresSensor() {
+  try {
+    const { data } = await api.get('/mqttRobot/api/sensores');
+    return {
+      temperatura: data.temperatura || 0,
+      humedad: data.humedad || 0,
+      gas: data.gas || 0
+    };
+  } catch (error) {
+    console.error('Error al obtener últimos valores de sensores:', error);
+    throw new Error(error.response?.data?.msg || 'No se pudieron obtener los datos del robot');
+  }
+}
+
+/**
  * Tipos de sensores comunes
  */
 export const SENSOR_TYPES = {

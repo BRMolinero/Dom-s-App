@@ -11,6 +11,8 @@ import LoadingMessage from '../../components/LoadingMessage';
 import { useSensorData } from '../../context/SensorContext';
 import AlertasPanel from '../../components/AlertasPanel';
 import { analizarCalidadAire } from '../../api/ai';
+import { getUltimosValoresSensor } from '../../api/sensors';
+import { crearAlerta } from '../../api/alertas';
 
 const AdminPanel = () => {
   const {
@@ -32,6 +34,61 @@ const AdminPanel = () => {
   const [airQualityFromBackend, setAirQualityFromBackend] = useState(null);
   const [loadingAirQuality, setLoadingAirQuality] = useState(false);
   const [errorAirQuality, setErrorAirQuality] = useState(null);
+  
+  // Estado para datos de sensores del endpoint /api/sensors/ultimos-valores
+  const [valoresSensor, setValoresSensor] = useState({
+    temperatura: 0,
+    humedad: 0,
+    gas: 0
+  });
+  const [loadingSensorData, setLoadingSensorData] = useState(false);
+  const [errorSensorData, setErrorSensorData] = useState(null);
+  
+  // Control de alertas ya creadas para evitar duplicados
+  const [alertasCreadas, setAlertasCreadas] = useState(new Set());
+  
+  // Estado previo para detectar cambios de rango (dentro -> fuera)
+  const [estadoAnterior, setEstadoAnterior] = useState({
+    temperatura: null,
+    humedad: null,
+    gas: null
+  });
+  
+  // Rangos definidos (basados en SensorContext y umbrales SOS)
+  const RANGOS = {
+    temperatura: {
+      min_optimo: 18,
+      max_optimo: 25,
+      min_peligroso: 15,
+      max_peligroso: 30,
+      max_critico: 40 // Umbral SOS
+    },
+    humedad: {
+      min_optimo: 40,
+      max_optimo: 60,
+      min_peligroso: 30,
+      max_peligroso: 70
+    },
+    gas: {
+      max_seguro: 80, // Temporalmente cambiado a 80
+      max_peligroso: 35,
+      max_critico: 50 // Umbral SOS
+    }
+  };
+  
+  // Función para verificar si un valor está dentro de rango
+  const estaDentroDeRango = (tipo, valor) => {
+    if (tipo === 'temperatura') {
+      return valor >= RANGOS.temperatura.min_optimo && valor <= RANGOS.temperatura.max_optimo;
+    }
+    if (tipo === 'humedad') {
+      return valor >= RANGOS.humedad.min_optimo && valor <= RANGOS.humedad.max_optimo;
+    }
+    if (tipo === 'gas') {
+      return valor <= RANGOS.gas.max_seguro;
+    }
+    return true;
+  };
   
   // Función para procesar y mapear datos del backend
   const procesarDatosBackend = (data) => {
@@ -94,11 +151,33 @@ const AdminPanel = () => {
     return processed;
   };
   
+  // Cargar datos de sensores del endpoint
+  const cargarDatosSensor = async () => {
+    setLoadingSensorData(true);
+    setErrorSensorData(null);
+    
+    try {
+      const datos = await getUltimosValoresSensor();
+      setValoresSensor({
+        temperatura: datos.temperatura || 0,
+        humedad: datos.humedad || 0,
+        gas: datos.gas || 0
+      });
+    } catch (error) {
+      console.error('Error al cargar datos de sensores:', error);
+      setErrorSensorData(error.message || 'Error al obtener datos de sensores');
+    } finally {
+      setLoadingSensorData(false);
+    }
+  };
+  
   // Cargar datos de calidad de aire del backend
   const cargarCalidadAire = async () => {
+    // Limpiar error al reintentar
+    setErrorAirQuality(null);
+    setLoadingAirQuality(true);
+    
     try {
-      setLoadingAirQuality(true);
-      setErrorAirQuality(null);
       console.log('🔄 Iniciando carga de calidad de aire...');
       
       const response = await analizarCalidadAire();
@@ -112,17 +191,200 @@ const AdminPanel = () => {
       }
       
       setAirQualityFromBackend(processedData);
+      // Limpiar error si la carga fue exitosa
+      setErrorAirQuality(null);
     } catch (err) {
       console.error('❌ Error al cargar calidad de aire:', err);
-      setErrorAirQuality(err.message || 'Error al obtener los datos de calidad de aire');
+      
+      // Mensajes de error más claros
+      let errorMessage = err.message || 'Error al obtener los datos de calidad de aire';
+      
+      if (err.isTimeout) {
+        errorMessage = 'El análisis está tardando más de lo esperado. Por favor, intenta nuevamente en unos momentos.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'El endpoint de análisis de IA no está disponible. Verifica la configuración del backend.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Error interno del servidor. El análisis de IA no pudo procesarse. Por favor, intenta nuevamente más tarde.';
+      } else if (err.response?.status === 503) {
+        errorMessage = 'El servidor está temporalmente no disponible. Por favor, intenta nuevamente en unos momentos.';
+      }
+      
+      setErrorAirQuality(errorMessage);
     } finally {
       setLoadingAirQuality(false);
     }
   };
   
+  // Función para verificar si un valor está fuera de rango y crear alerta
+  const verificarYCrearAlerta = async (tipo, valor, umbralMin, umbralMax, umbralCritico) => {
+    // Verificar si el valor está fuera de rango
+    const estaFueraDeRango = !estaDentroDeRango(tipo, valor);
+    const estabaDentroDeRango = estadoAnterior[tipo] !== null && estaDentroDeRango(tipo, estadoAnterior[tipo]);
+    
+    // Solo crear alerta si pasó de estar dentro de rango a fuera de rango
+    // o si es la primera vez que se detecta un valor fuera de rango
+    if (!estaFueraDeRango) {
+      // Si vuelve a estar dentro de rango, permitir crear nueva alerta si sale de nuevo
+      setEstadoAnterior(prev => ({ ...prev, [tipo]: valor }));
+      return;
+    }
+    
+    // Si ya estaba fuera de rango, no crear alerta duplicada
+    if (!estabaDentroDeRango && estadoAnterior[tipo] !== null) {
+      // Actualizar estado anterior
+      setEstadoAnterior(prev => ({ ...prev, [tipo]: valor }));
+      return;
+    }
+    
+    // Crear una clave única basada en el tipo y el estado de fuera de rango
+    const alertaKey = `${tipo}_fuera_rango_${Date.now()}`;
+    
+    // Evitar crear múltiples alertas en menos de 30 segundos para el mismo tipo
+    const ultimaAlerta = Array.from(alertasCreadas).find(key => key.startsWith(`${tipo}_fuera_rango`));
+    if (ultimaAlerta) {
+      const timestamp = parseInt(ultimaAlerta.split('_').pop());
+      const ahora = Date.now();
+      if (ahora - timestamp < 30000) { // 30 segundos
+        return;
+      }
+    }
+    
+    let fueraDeRango = false;
+    let severidad = 'media';
+    let descripcion = '';
+    
+    // Verificar temperatura - solo crear alerta si es > 30°C
+    if (tipo === 'temperatura') {
+      if (valor > 30) { // Solo crear alerta si es mayor a 30°C
+        fueraDeRango = true;
+        if (valor >= umbralCritico || valor < RANGOS.temperatura.min_peligroso) {
+          severidad = 'critica';
+          descripcion = `⚠️ Temperatura CRÍTICA: ${valor.toFixed(1)}°C. Valor fuera del rango seguro`;
+        } else {
+          severidad = 'alta';
+          descripcion = `⚠️ Temperatura ALTA: ${valor.toFixed(1)}°C. Valor elevado detectado`;
+        }
+      }
+    }
+    
+    // Verificar humedad - solo crear alerta si es > 80%
+    if (tipo === 'humedad') {
+      if (valor > 80) { // Solo crear alerta si es mayor a 80%
+        fueraDeRango = true;
+        if (valor > RANGOS.humedad.max_peligroso) {
+          severidad = 'alta';
+          descripcion = `⚠️ Humedad FUERA DE RANGO: ${valor.toFixed(1)}%. Valor peligroso detectado`;
+        } else {
+          severidad = 'media';
+          descripcion = `⚠️ Humedad elevada: ${valor.toFixed(1)}%. Valor alto detectado`;
+        }
+      }
+    }
+    
+    // Verificar gases - solo crear alerta si es > 85 ppm
+    if (tipo === 'gas') {
+      if (valor > 85) { // Solo crear alerta si es mayor a 85 ppm
+        fueraDeRango = true;
+        if (valor >= umbralCritico) {
+          severidad = 'critica';
+          descripcion = `🚨 GAS CRÍTICO: ${valor.toFixed(1)} ppm. Nivel PELIGROSO detectado`;
+        } else if (valor > RANGOS.gas.max_peligroso) {
+          severidad = 'alta';
+          descripcion = `⚠️ Gas PELIGROSO: ${valor.toFixed(1)} ppm. Nivel elevado detectado`;
+        } else {
+          severidad = 'media';
+          descripcion = `⚠️ Gas elevado: ${valor.toFixed(1)} ppm. Nivel alto detectado`;
+        }
+      }
+    }
+    
+    // Si está fuera de rango, crear la alerta
+    if (fueraDeRango) {
+      try {
+        await crearAlerta({
+          dispositivo_id: 1, // ID del dispositivo robot
+          tipo_alerta: `${tipo}_fuera_rango`,
+          descripcion: descripcion,
+          valor_actual: valor,
+          umbral: tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`,
+          severidad: severidad
+        });
+        
+        // Marcar como alerta creada con timestamp
+        setAlertasCreadas(prev => {
+          const nuevo = new Set(prev);
+          // Limpiar alertas antiguas del mismo tipo (más de 5 minutos)
+          const ahora = Date.now();
+          Array.from(nuevo).forEach(key => {
+            if (key.startsWith(`${tipo}_fuera_rango`)) {
+              const timestamp = parseInt(key.split('_').pop());
+              if (ahora - timestamp > 300000) { // 5 minutos
+                nuevo.delete(key);
+              }
+            }
+          });
+          nuevo.add(alertaKey);
+          return nuevo;
+        });
+        
+        // Actualizar estado anterior
+        setEstadoAnterior(prev => ({ ...prev, [tipo]: valor }));
+        
+        console.log(`✅ Alerta creada: ${tipo} fuera de rango (${valor})`);
+      } catch (error) {
+        console.error(`❌ Error al crear alerta para ${tipo}:`, error);
+      }
+    } else {
+      // Si no está fuera de rango, actualizar estado anterior
+      setEstadoAnterior(prev => ({ ...prev, [tipo]: valor }));
+    }
+  };
+  
+  // Monitorear sensorData del WebSocket y crear alertas cuando sea necesario
+  useEffect(() => {
+    // Verificar y crear alertas usando los datos del WebSocket (sensorData)
+    if (sensorData.temperature !== null && sensorData.temperature !== undefined) {
+      verificarYCrearAlerta(
+        'temperatura',
+        sensorData.temperature,
+        RANGOS.temperatura.min_optimo,
+        RANGOS.temperatura.max_optimo,
+        RANGOS.temperatura.max_critico
+      );
+    }
+    
+    if (sensorData.humidity !== null && sensorData.humidity !== undefined) {
+      verificarYCrearAlerta(
+        'humedad',
+        sensorData.humidity,
+        RANGOS.humedad.min_optimo,
+        RANGOS.humedad.max_optimo,
+        null
+      );
+    }
+    
+    if (sensorData.co !== null && sensorData.co !== undefined) {
+      verificarYCrearAlerta(
+        'gas',
+        sensorData.co,
+        0,
+        RANGOS.gas.max_seguro,
+        RANGOS.gas.max_critico
+      );
+    }
+  }, [sensorData.temperature, sensorData.humidity, sensorData.co]);
+  
   // Cargar datos cuando se monta el componente
   useEffect(() => {
     cargarCalidadAire();
+    cargarDatosSensor();
+    
+    // Actualizar datos cada 5 segundos
+    const interval = setInterval(() => {
+      cargarDatosSensor();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
   
   React.useEffect(() => {
@@ -385,14 +647,18 @@ const AdminPanel = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-[#274181]">{sensorData.temperature.toFixed(1)}°C</div>
+                    <div className="text-2xl font-bold text-[#274181]">
+                      {valoresSensor.temperatura.toFixed(1)}°C
+                    </div>
                   </div>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#274181] to-[#D95766] transition-all duration-1000 ease-out"
-                    style={{ width: `${getTemperaturePercentage() * 2}%` }}
+                    style={{ 
+                      width: `${Math.min(Math.max(valoresSensor.temperatura, 0), 50) * 2}%` 
+                    }}
                   />
                 </div>
               </div>
@@ -409,14 +675,18 @@ const AdminPanel = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-[#274181]">{sensorData.humidity.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-[#274181]">
+                      {valoresSensor.humedad.toFixed(1)}%
+                    </div>
                   </div>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#95CDD1] to-[#274181] transition-all duration-1000 ease-out"
-                    style={{ width: `${getHumidityPercentage()}%` }}
+                    style={{ 
+                      width: `${Math.min(Math.max(valoresSensor.humedad, 0), 100)}%` 
+                    }}
                   />
                 </div>
               </div>
@@ -433,14 +703,18 @@ const AdminPanel = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-[#274181]">{sensorData.co.toFixed(1)} ppm</div>
+                    <div className="text-2xl font-bold text-[#274181]">
+                      {(valoresSensor.gas / 100).toFixed(1)} ppm
+                    </div>
                   </div>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#F6963F] to-[#D95766] transition-all duration-1000 ease-out"
-                    style={{ width: `${getCOPercentage()}%` }}
+                    style={{ 
+                      width: `${Math.min(Math.max(valoresSensor.gas / 100, 0), 100)}%` 
+                    }}
                   />
                 </div>
               </div>

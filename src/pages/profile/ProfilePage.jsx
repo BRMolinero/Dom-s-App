@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { UserOutlined, MailOutlined, PhoneOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { UserOutlined, MailOutlined, PhoneOutlined, EditOutlined, SaveOutlined, CloseOutlined, MessageOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { 
   configurarTelefonoSOS, 
@@ -9,6 +9,13 @@ import {
   validarTelefonoInternacional,
   formatearTelefono
 } from '../../api/sos';
+import {
+  configurarChatIdTelegram,
+  obtenerConfiguracionTelegram,
+  eliminarChatIdTelegram,
+  validarChatIdTelegram,
+  formatearChatIdTelegram
+} from '../../api/telegram';
 import { getProfileApi, updateProfileApi } from '../../api/auth';
 import CustomAlert from '../../components/CustomAlert';
 import LoadingMessage from '../../components/LoadingMessage';
@@ -19,7 +26,8 @@ const ProfilePage = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    telefono_sos: ''
+    telefono_sos: '',
+    chat_id_telegram: ''
   });
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,13 +43,15 @@ const ProfilePage = () => {
       setFormData({
         username: user.username || '',
         email: user.email || '',
-        telefono_sos: user.telefono_sos || ''
+        telefono_sos: user.telefono_sos || '',
+        chat_id_telegram: user.chat_id_telegram || ''
       });
       // Inicializar profileData con datos del contexto
       setProfileData({
         username: user.username || '',
         email: user.email || '',
-        telefono_sos: user.telefono_sos || ''
+        telefono_sos: user.telefono_sos || '',
+        chat_id_telegram: user.chat_id_telegram || ''
       });
     }
     // Cargar datos actualizados del backend en segundo plano
@@ -54,7 +64,8 @@ const ProfilePage = () => {
       setFormData({
         username: profileData.username || '',
         email: profileData.email || '',
-        telefono_sos: profileData.telefono_sos || ''
+        telefono_sos: profileData.telefono_sos || '',
+        chat_id_telegram: profileData.chat_id_telegram || ''
       });
     }
   }, [profileData]);
@@ -67,8 +78,9 @@ const ProfilePage = () => {
       const profileData = await getProfileApi();
       setProfileData(profileData);
       
-      // Cargar configuración SOS
+      // Cargar configuración SOS y Telegram
       await cargarConfiguracionSOS(profileData);
+      await cargarConfiguracionTelegram(profileData);
       
     } catch (err) {
       console.error('Error al cargar perfil del usuario:', err);
@@ -117,6 +129,40 @@ const ProfilePage = () => {
     }
   };
 
+  const cargarConfiguracionTelegram = async (profileDataFromBackend = null) => {
+    try {
+      const data = await obtenerConfiguracionTelegram();
+      const chatIdBackend = data.chat_id_telegram || '';
+      
+      // Actualizar el estado del perfil con el chat_id de Telegram
+      if (profileDataFromBackend) {
+        const updatedProfileData = {
+          ...profileDataFromBackend,
+          chat_id_telegram: chatIdBackend
+        };
+        setProfileData(updatedProfileData);
+        
+        // Actualizar también el contexto de autenticación
+        const updatedUser = {
+          ...user,
+          chat_id_telegram: chatIdBackend
+        };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      console.error('Error al cargar configuración de Telegram:', err);
+      // Si falla, mantener el chat_id vacío en el perfil
+      if (profileDataFromBackend) {
+        const updatedProfileData = {
+          ...profileDataFromBackend,
+          chat_id_telegram: ''
+        };
+        setProfileData(updatedProfileData);
+      }
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -152,18 +198,38 @@ const ProfilePage = () => {
         // Si está vacío, eliminar del backend
         await eliminarTelefonoSOS();
       }
+
+      // Validar y guardar chat_id de Telegram
+      let chatIdFormateado = '';
+      if (formData.chat_id_telegram.trim()) {
+        chatIdFormateado = formatearChatIdTelegram(formData.chat_id_telegram.trim());
+        
+        if (!validarChatIdTelegram(chatIdFormateado)) {
+          setMessage({ type: 'error', text: 'Formato inválido. El chat_id de Telegram debe ser un número (ej: 123456789)' });
+          setLoading(false);
+          return;
+        }
+
+        // Guardar chat_id de Telegram en el backend
+        await configurarChatIdTelegram(chatIdFormateado);
+      } else {
+        // Si está vacío, eliminar del backend
+        await eliminarChatIdTelegram();
+      }
       
-      // Actualizar el estado local con el número formateado
+      // Actualizar el estado local con los datos formateados
       setFormData(prev => ({
         ...prev,
-        telefono_sos: telefonoFormateado
+        telefono_sos: telefonoFormateado,
+        chat_id_telegram: chatIdFormateado
       }));
       
       // Actualizar el contexto con los nuevos datos
       const updatedUser = {
         ...user,
         username: formData.username,
-        telefono_sos: telefonoFormateado
+        telefono_sos: telefonoFormateado,
+        chat_id_telegram: chatIdFormateado
       };
       
       setUser(updatedUser);
@@ -183,7 +249,8 @@ const ProfilePage = () => {
     setFormData({
       username: profileData?.username || '',
       email: profileData?.email || '',
-      telefono_sos: profileData?.telefono_sos || ''
+      telefono_sos: profileData?.telefono_sos || '',
+      chat_id_telegram: profileData?.chat_id_telegram || ''
     });
     setIsEditing(false);
     setMessage({ type: '', text: '' });
@@ -230,6 +297,52 @@ const ProfilePage = () => {
       
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Error al eliminar número SOS' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEliminarTelegram = () => {
+    if (!formData.chat_id_telegram) {
+      setMessage({ type: 'error', text: 'No hay chat_id de Telegram configurado para eliminar' });
+      return;
+    }
+
+    setAlertConfig({
+      title: 'Eliminar chat_id de Telegram',
+      message: '¿Estás seguro de que quieres eliminar el chat_id de Telegram? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      type: 'error',
+      onConfirm: eliminarTelegramConfirmado
+    });
+    setShowAlert(true);
+  };
+
+  const eliminarTelegramConfirmado = async () => {
+    try {
+      setLoading(true);
+      setMessage({ type: '', text: '' });
+      
+      await eliminarChatIdTelegram();
+      
+      setFormData(prev => ({
+        ...prev,
+        chat_id_telegram: ''
+      }));
+      
+      // Actualizar el contexto
+      const updatedUser = {
+        ...user,
+        chat_id_telegram: ''
+      };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      setMessage({ type: 'success', text: 'Chat ID de Telegram eliminado correctamente' });
+      
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || 'Error al eliminar chat_id de Telegram' });
     } finally {
       setLoading(false);
     }
@@ -367,6 +480,61 @@ const ProfilePage = () => {
             </div>
           </div>
 
+          {/* Chat ID de Telegram SOS */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-[#274181] flex items-center gap-2">
+              <MessageOutlined className="w-4 h-4" />
+              Chat ID de Telegram SOS
+              <div className="relative group flex items-center">
+                <InfoCircleOutlined className="w-3 h-3 text-[#0DC0E8] cursor-help" />
+                <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-[#274181] text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="font-semibold mb-2">¿Cómo obtener el Chat ID?</div>
+                  <p className="mb-2 text-[#F5F2F2]">Indicá a tu contacto de emergencia que realice estos pasos:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-[#F5F2F2]">
+                    <li>Abrir Telegram y buscar el bot @userinfobot</li>
+                    <li>Iniciar una conversación con el bot</li>
+                    <li>Enviar el comando /start</li>
+                    <li>El bot responderá con su Chat ID (número)</li>
+                    <li>Pedirle que te comparta ese número para ingresarlo aquí</li>
+                  </ol>
+                  <div className="absolute bottom-0 left-4 transform translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#274181]"></div>
+                </div>
+              </div>
+            </label>
+            
+            <div className="relative">
+              <input
+                type="text"
+                name="chat_id_telegram"
+                value={!isEditing && !formData.chat_id_telegram ? 'No configurado' : formData.chat_id_telegram}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                placeholder={isEditing ? "Ej: 123456789" : ""}
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 font-medium ${
+                  isEditing 
+                    ? 'border-[#95CDD1] focus:border-[#0DC0E8] focus:outline-none focus:ring-4 focus:ring-[#0DC0E8]/20 bg-white text-[#274181]' 
+                    : 'border-[#95CDD1] bg-[#F5F2F2] text-[#6B7280]'
+                }`}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {formData.chat_id_telegram && isEditing && (
+                <button
+                  onClick={handleEliminarTelegram}
+                  disabled={loading}
+                  className="p-1 rounded-lg text-[#274181] hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50 flex items-center justify-center"
+                  title="Eliminar chat_id de Telegram"
+                >
+                  <HiOutlineTrash className="w-3 h-3" />
+                </button>
+              )}
+              <p className="text-xs text-[#6B7280]">
+                El chat_id de Telegram se utilizará para enviar notificaciones al contacto de emergencia
+              </p>
+            </div>
+          </div>
+
           {/* Botones */}
           <div className="flex gap-3">
             {!isEditing ? (
@@ -406,6 +574,7 @@ const ProfilePage = () => {
           <ul className="text-[#1E40AF] text-xs space-y-1 list-disc list-inside">
             <li>El usuario y email no se pueden modificar por razones de seguridad.</li>
             <li>El teléfono SOS se utilizará para contactarse en caso de emergencia.</li>
+            <li>El chat_id de Telegram se utilizará para enviar notificaciones al contacto de emergencia.</li>
           </ul>
         </div>
 

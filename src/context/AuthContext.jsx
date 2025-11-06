@@ -31,9 +31,13 @@ export function AuthProvider({ children }) {
       setAccessToken(data.accessToken);
       localStorage.setItem("accessToken", data.accessToken);
       
+      // Actualizar el auth bridge inmediatamente para que el interceptor tenga el token
+      bindAuth({ accessToken: data.accessToken, setAccessToken });
+      
       // Paso 1: establecer usuario inicial si vino en la respuesta
       const initialUser = data.usuario ?? null;
       if (initialUser) {
+        console.log("👤 Usuario inicial del login:", initialUser);
         setUser(initialUser);
         localStorage.setItem("user", JSON.stringify(initialUser));
       } else {
@@ -47,6 +51,7 @@ export function AuthProvider({ children }) {
           getProfileApi().catch(() => null),
           obtenerConfiguracionSOS().catch(() => ({ telefono_sos: "" }))
         ]);
+        
         const telefonoSOS = sosConfig?.telefono_sos || "";
         if (telefonoSOS) {
           localStorage.setItem("telefono_sos", telefonoSOS);
@@ -58,10 +63,18 @@ export function AuthProvider({ children }) {
           ...(profile || {}),
           telefono_sos: telefonoSOS
         };
+        
+        // Mostrar datos del perfil del usuario una sola vez después del login
+        if (profile) {
+          console.log("👤 Datos del perfil del usuario:", profile);
+        }
         setUser(mergedUser);
         localStorage.setItem("user", JSON.stringify(mergedUser));
       } catch (e) {
         console.log("ℹ️ No se pudo cargar perfil/SOS tras login, se mantiene usuario inicial");
+        if (initialUser) {
+          console.log("👤 Usuario final (sin perfil completo):", initialUser);
+        }
       }
       
       // Disparar evento para que otros componentes se enteren del token
