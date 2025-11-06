@@ -54,29 +54,47 @@ const AdminPanel = () => {
     gas: null
   });
   
-  // Rangos definidos (basados en SensorContext y umbrales SOS)
+  // Rangos unificados según ASHRAE y estándares de calidad ambiental
   const RANGOS = {
     temperatura: {
-      min_optimo: 18,
-      max_optimo: 25,
-      min_peligroso: 15,
-      max_peligroso: 30,
-      max_critico: 40 // Umbral SOS
+      min_optimo: 20,
+      max_optimo: 26,
+      // Alerta media: 14-15 o 30-32
+      min_alerta_media: 14,
+      max_alerta_media: 32,
+      // Alerta alta: 12-13 o 33-35
+      min_alerta_alta: 12,
+      max_alerta_alta: 35,
+      // Crítica: ≤11 o ≥36
+      min_critico: 11,
+      max_critico: 36
     },
     humedad: {
       min_optimo: 40,
       max_optimo: 60,
-      min_peligroso: 30,
-      max_peligroso: 70
+      // Alerta media: 20-29 o 70-74
+      min_alerta_media: 20,
+      max_alerta_media: 74,
+      // Alerta alta: 10-19 o 75-79
+      min_alerta_alta: 10,
+      max_alerta_alta: 79,
+      // Crítica: <10 o >80
+      min_critico: 10,
+      max_critico: 80
     },
     gas: {
-      max_seguro: 80, // Temporalmente cambiado a 80
-      max_peligroso: 35,
-      max_critico: 50 // Umbral SOS
+      // Óptimo: |z| < 2 (o ≤+5% sobre baseline) por ≥2 min
+      max_optimo: 2,
+      // Alerta media: ≥ 3
+      max_alerta_media: 3,
+      // Alerta alta: ≥ 4
+      max_alerta_alta: 4,
+      // Crítica: ≥ 5
+      max_critico: 5
     }
   };
   
-  // Función para verificar si un valor está dentro de rango
+  // Función para verificar si un valor está dentro del rango óptimo
   const estaDentroDeRango = (tipo, valor) => {
     if (tipo === 'temperatura') {
       return valor >= RANGOS.temperatura.min_optimo && valor <= RANGOS.temperatura.max_optimo;
@@ -85,7 +103,8 @@ const AdminPanel = () => {
       return valor >= RANGOS.humedad.min_optimo && valor <= RANGOS.humedad.max_optimo;
     }
     if (tipo === 'gas') {
-      return valor <= RANGOS.gas.max_seguro;
+      // Para gases, el valor viene dividido por 100, comparamos con el rango óptimo
+      return valor <= RANGOS.gas.max_optimo;
     }
     return true;
   };
@@ -253,47 +272,81 @@ const AdminPanel = () => {
     let severidad = 'media';
     let descripcion = '';
     
-    // Verificar temperatura - solo crear alerta si es > 30°C
+    // Verificar temperatura
     if (tipo === 'temperatura') {
-      if (valor > 30) { // Solo crear alerta si es mayor a 30°C
+      // Verificar si está fuera del rango óptimo (20-26°C)
+      if (valor < RANGOS.temperatura.min_optimo || valor > RANGOS.temperatura.max_optimo) {
         fueraDeRango = true;
-        if (valor >= umbralCritico || valor < RANGOS.temperatura.min_peligroso) {
+        
+        // Crítica: ≤11 o ≥36
+        if (valor <= RANGOS.temperatura.min_critico || valor >= RANGOS.temperatura.max_critico) {
           severidad = 'critica';
-          descripcion = `⚠️ Temperatura CRÍTICA: ${valor.toFixed(1)}°C. Valor fuera del rango seguro`;
-        } else {
+          descripcion = `🚨 Temperatura CRÍTICA: ${valor.toFixed(1)}°C. Valor fuera del rango crítico`;
+        }
+        // Alerta alta: 12-13 o 33-35
+        else if ((valor >= RANGOS.temperatura.min_alerta_alta && valor <= 13) || 
+                 (valor >= 33 && valor <= RANGOS.temperatura.max_alerta_alta)) {
           severidad = 'alta';
-          descripcion = `⚠️ Temperatura ALTA: ${valor.toFixed(1)}°C. Valor elevado detectado`;
+          descripcion = `⚠️ Temperatura ALTA: ${valor.toFixed(1)}°C. Valor fuera del rango óptimo`;
+        }
+        // Alerta media: 14-15 o 30-32
+        else if ((valor >= RANGOS.temperatura.min_alerta_media && valor <= 15) || 
+                 (valor >= 30 && valor <= RANGOS.temperatura.max_alerta_media)) {
+          severidad = 'media';
+          descripcion = `⚠️ Temperatura fuera de rango: ${valor.toFixed(1)}°C. Valor elevado detectado`;
         }
       }
     }
     
-    // Verificar humedad - solo crear alerta si es > 80%
+    // Verificar humedad
     if (tipo === 'humedad') {
-      if (valor > 80) { // Solo crear alerta si es mayor a 80%
+      // Verificar si está fuera del rango óptimo (40-60%)
+      if (valor < RANGOS.humedad.min_optimo || valor > RANGOS.humedad.max_optimo) {
         fueraDeRango = true;
-        if (valor > RANGOS.humedad.max_peligroso) {
+        
+        // Crítica: <10 o >80
+        if (valor < RANGOS.humedad.min_critico || valor > RANGOS.humedad.max_critico) {
+          severidad = 'critica';
+          descripcion = `🚨 Humedad CRÍTICA: ${valor.toFixed(1)}%. Valor fuera del rango crítico`;
+        }
+        // Alerta alta: 10-19 o 75-79
+        else if ((valor >= RANGOS.humedad.min_alerta_alta && valor <= 19) || 
+                 (valor >= 75 && valor <= RANGOS.humedad.max_alerta_alta)) {
           severidad = 'alta';
-          descripcion = `⚠️ Humedad FUERA DE RANGO: ${valor.toFixed(1)}%. Valor peligroso detectado`;
-        } else {
+          descripcion = `⚠️ Humedad ALTA: ${valor.toFixed(1)}%. Valor fuera del rango óptimo`;
+        }
+        // Alerta media: 20-29 o 70-74
+        else if ((valor >= RANGOS.humedad.min_alerta_media && valor <= 29) || 
+                 (valor >= 70 && valor <= RANGOS.humedad.max_alerta_media)) {
           severidad = 'media';
-          descripcion = `⚠️ Humedad elevada: ${valor.toFixed(1)}%. Valor alto detectado`;
+          descripcion = `⚠️ Humedad fuera de rango: ${valor.toFixed(1)}%. Valor elevado detectado`;
         }
       }
     }
     
-    // Verificar gases - solo crear alerta si es > 85 ppm
+    // Verificar gases (el valor del sensor viene sin dividir, comparamos dividido por 100)
     if (tipo === 'gas') {
-      if (valor > 85) { // Solo crear alerta si es mayor a 85 ppm
+      // El valor del sensor se divide por 100 para comparar con los rangos
+      const valorNormalizado = valor / 100;
+      
+      // Verificar si está fuera del rango óptimo (|z| < 2)
+      if (valorNormalizado > RANGOS.gas.max_optimo) {
         fueraDeRango = true;
-        if (valor >= umbralCritico) {
+        
+        // Crítica: ≥ 5
+        if (valorNormalizado >= RANGOS.gas.max_critico) {
           severidad = 'critica';
-          descripcion = `🚨 GAS CRÍTICO: ${valor.toFixed(1)} ppm. Nivel PELIGROSO detectado`;
-        } else if (valor > RANGOS.gas.max_peligroso) {
+          descripcion = `🚨 GAS CRÍTICO: ${valorNormalizado.toFixed(1)} ppm. Nivel PELIGROSO detectado`;
+        }
+        // Alerta alta: ≥ 4
+        else if (valorNormalizado >= RANGOS.gas.max_alerta_alta) {
           severidad = 'alta';
-          descripcion = `⚠️ Gas PELIGROSO: ${valor.toFixed(1)} ppm. Nivel elevado detectado`;
-        } else {
+          descripcion = `⚠️ Gas PELIGROSO: ${valorNormalizado.toFixed(1)} ppm. Nivel elevado detectado`;
+        }
+        // Alerta media: ≥ 3
+        else if (valorNormalizado >= RANGOS.gas.max_alerta_media) {
           severidad = 'media';
-          descripcion = `⚠️ Gas elevado: ${valor.toFixed(1)} ppm. Nivel alto detectado`;
+          descripcion = `⚠️ Gas elevado: ${valorNormalizado.toFixed(1)} ppm. Nivel alto detectado`;
         }
       }
     }
@@ -359,16 +412,18 @@ const AdminPanel = () => {
         sensorData.humidity,
         RANGOS.humedad.min_optimo,
         RANGOS.humedad.max_optimo,
-        null
+        RANGOS.humedad.max_critico
       );
     }
     
     if (sensorData.co !== null && sensorData.co !== undefined) {
+      // El valor de gas viene sin dividir del sensor
+      // Dentro de verificarYCrearAlerta se divide por 100 para comparar con los rangos
       verificarYCrearAlerta(
         'gas',
         sensorData.co,
         0,
-        RANGOS.gas.max_seguro,
+        RANGOS.gas.max_optimo,
         RANGOS.gas.max_critico
       );
     }
@@ -657,7 +712,11 @@ const AdminPanel = () => {
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#274181] to-[#D95766] transition-all duration-1000 ease-out"
                     style={{ 
-                      width: `${Math.min(Math.max(valoresSensor.temperatura, 0), 50) * 2}%` 
+                      width: `${Math.min(Math.max(
+                        ((valoresSensor.temperatura - RANGOS.temperatura.min_optimo) / 
+                         (RANGOS.temperatura.max_optimo - RANGOS.temperatura.min_optimo)) * 100,
+                        0
+                      ), 100)}%` 
                     }}
                   />
                 </div>
@@ -685,7 +744,11 @@ const AdminPanel = () => {
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#95CDD1] to-[#274181] transition-all duration-1000 ease-out"
                     style={{ 
-                      width: `${Math.min(Math.max(valoresSensor.humedad, 0), 100)}%` 
+                      width: `${Math.min(Math.max(
+                        ((valoresSensor.humedad - RANGOS.humedad.min_optimo) / 
+                         (RANGOS.humedad.max_optimo - RANGOS.humedad.min_optimo)) * 100,
+                        0
+                      ), 100)}%` 
                     }}
                   />
                 </div>
@@ -713,7 +776,10 @@ const AdminPanel = () => {
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#F6963F] to-[#D95766] transition-all duration-1000 ease-out"
                     style={{ 
-                      width: `${Math.min(Math.max(valoresSensor.gas / 100, 0), 100)}%` 
+                      width: `${Math.min(Math.max(
+                        ((valoresSensor.gas / 100) / RANGOS.gas.max_optimo) * 100,
+                        0
+                      ), 100)}%` 
                     }}
                   />
                 </div>
