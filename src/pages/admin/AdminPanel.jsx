@@ -375,6 +375,18 @@ const AdminPanel = () => {
     // Si está fuera de rango, crear la alerta
     if (fueraDeRango) {
       try {
+        // Guardar la hora de creación de la alerta (misma que se mostrará en el historial)
+        // Usar zona horaria de Argentina
+        const fechaCreacion = new Date();
+        const fechaFormateada = fechaCreacion.toLocaleString('es-AR', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
         await crearAlerta({
           dispositivo_id: 1, // ID del dispositivo robot
           tipo_alerta: `${tipo}_fuera_rango`,
@@ -415,7 +427,7 @@ const AdminPanel = () => {
                                     `• Valor actual: ${valorMostrar} ${unidad}\n` +
                                     `• Umbral: ${tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`}${tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : ''}\n` +
                                     `• Severidad: ${severidad.toUpperCase()}\n\n` +
-                                    `📅 ${new Date().toLocaleString('es-AR')}\n\n` +
+                                    `📅 ${fechaFormateada}\n\n` +
                                     `Por favor, acude a su hogar lo antes posible.`;
               
               // Enviar SOLO por Telegram (notificación automática de alerta)

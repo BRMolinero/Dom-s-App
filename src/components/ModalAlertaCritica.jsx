@@ -99,6 +99,7 @@ const ModalAlertaCritica = () => {
 
   const info = getSeveridadInfo(alertaActual.severidad);
   const fecha = new Date(alertaActual.created_at).toLocaleString('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

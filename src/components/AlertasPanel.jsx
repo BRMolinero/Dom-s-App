@@ -7,8 +7,8 @@ const AlertasPanel = () => {
   const [alertas, setAlertas] = useState([]);
   const [alertasNoLeidas, setAlertasNoLeidas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtroSeveridad, setFiltroSeveridad] = useState('todas');
-  const [mostrarSoloNoLeidas, setMostrarSoloNoLeidas] = useState(true);
+  const [filtroSeveridad, setFiltroSeveridad] = useState('alta');
+  const [mostrarSoloNoLeidas] = useState(false); // Siempre mostrar todas las alertas
 
   // Función para cargar alertas
   const cargarAlertas = async () => {
@@ -49,7 +49,7 @@ const AlertasPanel = () => {
     }, 30000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroSeveridad, mostrarSoloNoLeidas]);
+  }, [filtroSeveridad]);
 
   // Función para marcar alerta como leída
   const handleMarcarComoLeida = async (alertaId) => {
@@ -156,19 +156,6 @@ const AlertasPanel = () => {
       {/* Filtros */}
       <div className="mb-6 flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="soloNoLeidas"
-            checked={mostrarSoloNoLeidas}
-            onChange={(e) => setMostrarSoloNoLeidas(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-[#274181] focus:ring-[#274181]"
-          />
-          <label htmlFor="soloNoLeidas" className="text-sm text-[#274181] font-medium cursor-pointer">
-            Solo no leídas
-          </label>
-        </div>
-
-        <div className="flex items-center gap-2">
           <label className="text-sm text-[#274181] font-medium">Severidad:</label>
           <select
             value={filtroSeveridad}
@@ -195,6 +182,7 @@ const AlertasPanel = () => {
           alertas.map((alerta) => {
             const colors = getSeveridadColors(alerta.severidad);
             const fecha = new Date(alerta.created_at).toLocaleString('es-AR', {
+              timeZone: 'America/Argentina/Buenos_Aires',
               day: '2-digit',
               month: '2-digit',
               year: 'numeric',
