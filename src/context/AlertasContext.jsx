@@ -35,7 +35,7 @@ export function AlertasProvider({ children }) {
       // Excluir alertas de tipo "sos_activado" (solo mostrar alertas de sensores fuera de rango)
       const criticas = alertas.filter(
         (alerta) => 
-          (alerta.severidad === 'critica' || alerta.severidad === 'alta') && 
+          (alerta.severidad === 'critica' || alerta.severidad === 'alta' || alerta.severidad === 'media') && 
           !alertasMostradas.has(alerta.id) &&
           alerta.tipo_alerta !== 'sos_activado' // No mostrar alertas de mensajes SOS enviados
       );

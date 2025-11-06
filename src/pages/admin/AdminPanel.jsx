@@ -70,7 +70,7 @@ const AdminPanel = () => {
       max_alerta_media: 32,
       // Alerta alta: 12-13 o 33-35
       min_alerta_alta: 12,
-      max_alerta_alta: 35,
+      max_alerta_alta: 22,
       // Crítica: ≤11 o ≥36
       min_critico: 11,
       max_critico: 36
@@ -384,13 +384,14 @@ const AdminPanel = () => {
           severidad: severidad
         });
         
-        // Si la severidad es alta o crítica, mostrar modal y enviar notificación por Telegram
-        if (severidad === 'alta' || severidad === 'critica') {
+        // Si la severidad es media, alta o crítica, mostrar modal y enviar notificación por Telegram
+        if (severidad === 'media' || severidad === 'alta' || severidad === 'critica') {
           // Forzar recarga de alertas para mostrar el modal inmediatamente
           // Pasar true para indicar que debe mostrar el modal
-          setTimeout(() => {
-            cargarAlertasNoLeidas(true);
-          }, 1000); // Delay para asegurar que la alerta se guardó en la BD
+          // COMENTADO: No mostrar modal de alerta crítica en la app
+          // setTimeout(() => {
+          //   cargarAlertasNoLeidas(true);
+          // }, 1000); // Delay para asegurar que la alerta se guardó en la BD
           
           // Enviar notificación automática SOLO por Telegram (no por WhatsApp)
           try {
