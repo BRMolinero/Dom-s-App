@@ -8,7 +8,7 @@ const base = apiBaseUrl.replace(/\/+$/, "");
 
 export const api = axios.create({
   baseURL: base,
-  timeout: 10000,
+  timeout: 30000, // Aumentado a 30 segundos para Render (puede tardar en responder si está "spinning up")
   withCredentials: true,
 });
 
