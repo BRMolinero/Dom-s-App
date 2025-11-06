@@ -15,9 +15,10 @@ const AlertasPanel = () => {
     try {
       setLoading(true);
       
-      // Cargar alertas no leídas siempre
+      // Cargar alertas no leídas siempre (excluyendo alertas de tipo "sos_activado")
       const noLeidasData = await obtenerAlertas({ leida: false });
-      setAlertasNoLeidas(noLeidasData.data || []);
+      const noLeidasFiltradas = (noLeidasData.data || []).filter(alerta => alerta.tipo_alerta !== 'sos_activado');
+      setAlertasNoLeidas(noLeidasFiltradas);
 
       // Cargar alertas según filtros
       const filtros = {
@@ -26,7 +27,9 @@ const AlertasPanel = () => {
       };
       
       const data = await obtenerAlertas(filtros);
-      setAlertas(data.data || []);
+      // Filtrar alertas de tipo "sos_activado" (solo mostrar alertas de sensores fuera de rango)
+      const alertasFiltradas = (data.data || []).filter(alerta => alerta.tipo_alerta !== 'sos_activado');
+      setAlertas(alertasFiltradas);
     } catch (error) {
       console.error('Error al cargar alertas:', error);
       setAlertas([]);
@@ -176,7 +179,6 @@ const AlertasPanel = () => {
             <option value="critica">Crítica</option>
             <option value="alta">Alta</option>
             <option value="media">Media</option>
-            <option value="baja">Baja</option>
           </select>
         </div>
       </div>

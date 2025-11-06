@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fa';
 import LoadingMessage from '../../components/LoadingMessage';
 import { useSensorData } from '../../context/SensorContext';
+import { useAuth } from '../../context/AuthContext';
+import { useAlertas } from '../../context/AlertasContext';
 import AlertasPanel from '../../components/AlertasPanel';
 import { analizarCalidadAire } from '../../api/ai';
 import { getUltimosValoresSensor } from '../../api/sensors';
@@ -16,6 +18,8 @@ import { crearAlerta } from '../../api/alertas';
 import { enviarMensajeTelegramSOS, obtenerConfiguracionSOS } from '../../api/sos';
 
 const AdminPanel = () => {
+  const { user } = useAuth();
+  const { cargarAlertasNoLeidas } = useAlertas();
   const {
     sensorData,
     lastUpdate,
@@ -56,10 +60,11 @@ const AdminPanel = () => {
   });
   
   // Rangos unificados según ASHRAE y estándares de calidad ambiental
+  // TEMPORAL: Rango de temperatura bajado para pruebas
   const RANGOS = {
     temperatura: {
-      min_optimo: 20,
-      max_optimo: 26,
+      min_optimo: 5,
+      max_optimo: 10, // TEMPORAL: Bajado a 10 para probar alertas
       // Alerta media: 14-15 o 30-32
       min_alerta_media: 14,
       max_alerta_media: 32,
@@ -293,7 +298,7 @@ const AdminPanel = () => {
         else if ((valor >= RANGOS.temperatura.min_alerta_alta && valor <= 13) || 
                  (valor >= 33 && valor <= RANGOS.temperatura.max_alerta_alta)) {
           severidad = 'alta';
-          descripcion = `⚠️ Temperatura ALTA: ${valor.toFixed(1)}°C. Valor fuera del rango óptimo`;
+          descripcion = `⚠️ Temperatura ALTA: ${valor.toFixed(1)}°C. Valor elevado detectado`;
         }
         // Alerta media: 14-15 o 30-32
         else if ((valor >= RANGOS.temperatura.min_alerta_media && valor <= 15) || 
@@ -324,7 +329,7 @@ const AdminPanel = () => {
         else if ((valor >= RANGOS.humedad.min_alerta_alta && valor <= 19) || 
                  (valor >= 75 && valor <= RANGOS.humedad.max_alerta_alta)) {
           severidad = 'alta';
-          descripcion = `⚠️ Humedad ALTA: ${valor.toFixed(1)}%. Valor fuera del rango óptimo`;
+          descripcion = `⚠️ Humedad ALTA: ${valor.toFixed(1)}%. Valor elevado detectado`;
         }
         // Alerta media: 20-29 o 70-74
         else if ((valor >= RANGOS.humedad.min_alerta_media && valor <= 29) || 
@@ -335,15 +340,15 @@ const AdminPanel = () => {
       }
     }
     
-    // Verificar gases (el valor del sensor viene sin dividir, comparamos dividido por 100)
+    // Verificar gases (el valor ya viene dividido por 100, comparamos directamente)
     if (tipo === 'gas') {
-      // No crear alertas si el valor es 0 o muy bajo (< 80 en valor original = < 0.8 ppm), probablemente es un error de lectura
-      if (valor <= 0 || valor < 80) {
+      // No crear alertas si el valor es 0 o muy bajo (< 0.8 ppm), probablemente es un error de lectura
+      if (valor <= 0 || valor < 0.8) {
         return; // No crear alerta para valores 0 o muy bajos
       }
       
-      // El valor del sensor se divide por 100 para comparar con los rangos
-      const valorNormalizado = valor / 100;
+      // El valor ya viene dividido por 100, usamos directamente
+      const valorNormalizado = valor;
       
       // Verificar si está fuera del rango óptimo (|z| < 2)
       if (valorNormalizado > RANGOS.gas.max_optimo) {
@@ -379,25 +384,42 @@ const AdminPanel = () => {
           severidad: severidad
         });
         
-        // Si la severidad es media o alta, enviar notificación por Telegram
-        if (severidad === 'media' || severidad === 'alta') {
+        // Si la severidad es alta o crítica, mostrar modal y enviar notificación por Telegram
+        if (severidad === 'alta' || severidad === 'critica') {
+          // Forzar recarga de alertas para mostrar el modal inmediatamente
+          // Pasar true para indicar que debe mostrar el modal
+          setTimeout(() => {
+            cargarAlertasNoLeidas(true);
+          }, 1000); // Delay para asegurar que la alerta se guardó en la BD
+          
+          // Enviar notificación automática SOLO por Telegram (no por WhatsApp)
           try {
             // Obtener configuración SOS para verificar si tiene Telegram configurado
             const configSOS = await obtenerConfiguracionSOS();
+            // Solo enviar si Telegram está configurado y habilitado
+            // Las notificaciones automáticas de alertas solo se envían por Telegram
             if (configSOS.telegram_id && configSOS.enviar_por_telegram !== false) {
-              // Para gases, mostrar el valor dividido por 100
-              const valorMostrar = tipo === 'gas' ? (valor / 100).toFixed(1) : valor.toFixed(1);
+              // Para gases, el valor ya viene dividido por 100
+              const valorMostrar = valor.toFixed(1);
               const unidad = tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : 'ppm';
               
-              const mensajeTelegram = `⚠️ <b>ALERTA DE SENSOR</b>\n\n` +
-                                    `${descripcion}\n\n` +
-                                    `Valor actual: ${valorMostrar} ${unidad}\n` +
-                                    `Umbral: ${tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`}${tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : ''}\n` +
-                                    `Severidad: ${severidad.toUpperCase()}\n\n` +
-                                    `Fecha: ${new Date().toLocaleString('es-AR')}`;
+              // Obtener nombre del usuario
+              const nombreUsuario = user?.username || user?.name || user?.email || 'Usuario';
               
+              // Mensaje más amigable y personalizado
+              const tipoSensor = tipo === 'temperatura' ? 'Temperatura' : tipo === 'humedad' ? 'Humedad' : 'Gas';
+              const mensajeTelegram = `🚨 <b>EMERGENCIA - ${nombreUsuario} necesita ayuda</b>\n\n` +
+                                    `Se detectó una alerta de <b>${tipoSensor}</b> en el sistema Domüs.\n\n` +
+                                    `<b>Detalles:</b>\n` +
+                                    `• Valor actual: ${valorMostrar} ${unidad}\n` +
+                                    `• Umbral: ${tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`}${tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : ''}\n` +
+                                    `• Severidad: ${severidad.toUpperCase()}\n\n` +
+                                    `📅 ${new Date().toLocaleString('es-AR')}\n\n` +
+                                    `Por favor, acude a su hogar lo antes posible.`;
+              
+              // Enviar SOLO por Telegram (notificación automática de alerta)
               await enviarMensajeTelegramSOS(mensajeTelegram, `${tipo}_alerta`, 1);
-              console.log(`💬 Notificación Telegram enviada para alerta ${tipo} (${severidad})`);
+              console.log(`💬 Notificación automática Telegram enviada para alerta ${tipo} (${severidad})`);
             }
           } catch (error) {
             // No fallar la creación de la alerta si falla el envío de Telegram
@@ -435,41 +457,41 @@ const AdminPanel = () => {
     }
   };
   
-  // Monitorear sensorData del WebSocket y crear alertas cuando sea necesario
+  // Monitorear valoresSensor (últimos datos del endpoint REST) y crear alertas cuando sea necesario
   useEffect(() => {
-    // Verificar y crear alertas usando los datos del WebSocket (sensorData)
-    if (sensorData.temperature !== null && sensorData.temperature !== undefined) {
+    // Verificar y crear alertas usando los últimos datos del endpoint REST (valoresSensor)
+    if (valoresSensor.temperatura !== null && valoresSensor.temperatura !== undefined && valoresSensor.temperatura !== 0) {
       verificarYCrearAlerta(
         'temperatura',
-        sensorData.temperature,
+        valoresSensor.temperatura,
         RANGOS.temperatura.min_optimo,
         RANGOS.temperatura.max_optimo,
         RANGOS.temperatura.max_critico
       );
     }
     
-    if (sensorData.humidity !== null && sensorData.humidity !== undefined) {
+    if (valoresSensor.humedad !== null && valoresSensor.humedad !== undefined && valoresSensor.humedad !== 0) {
       verificarYCrearAlerta(
         'humedad',
-        sensorData.humidity,
+        valoresSensor.humedad,
         RANGOS.humedad.min_optimo,
         RANGOS.humedad.max_optimo,
         RANGOS.humedad.max_critico
       );
     }
     
-    if (sensorData.co !== null && sensorData.co !== undefined) {
-      // El valor de gas viene sin dividir del sensor
-      // Dentro de verificarYCrearAlerta se divide por 100 para comparar con los rangos
+    if (valoresSensor.gas !== null && valoresSensor.gas !== undefined && valoresSensor.gas !== 0) {
+      // El valor de gas viene sin dividir del sensor, dividimos por 100 antes de verificar
+      const valorGasDividido = valoresSensor.gas / 100;
       verificarYCrearAlerta(
         'gas',
-        sensorData.co,
+        valorGasDividido,
         0,
         RANGOS.gas.max_optimo,
         RANGOS.gas.max_critico
       );
     }
-  }, [sensorData.temperature, sensorData.humidity, sensorData.co]);
+  }, [valoresSensor.temperatura, valoresSensor.humedad, valoresSensor.gas]);
   
   // Cargar datos cuando se monta el componente
   useEffect(() => {

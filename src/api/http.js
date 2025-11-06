@@ -2,8 +2,8 @@ import axios from "axios";
 import { getAuth } from "./authBridge";
 
 // Configuración de API
-// Si VITE_API_URL está definido, usarlo; sino usar localhost:3000/api por defecto
-const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// Si VITE_API_URL está definido, usarlo; sino usar la URL de Render por defecto
+const apiBaseUrl = import.meta.env.VITE_API_URL || "https://robot-backend-wpr4.onrender.com/api";
 const base = apiBaseUrl.replace(/\/+$/, "");
 
 export const api = axios.create({

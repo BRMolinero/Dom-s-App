@@ -26,7 +26,7 @@ export const SensorProvider = ({ children }) => {
   const [authPending, setAuthPending] = useState(true);
   const [didConnectOnce, setDidConnectOnce] = useState(false);
 
-  const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+  const wsUrl = import.meta.env.VITE_WS_URL || 'wss://robot-backend-wpr4.onrender.com';
 
   const {
     isConnected: wsConnected,

@@ -178,34 +178,18 @@ const ModalAlertaCritica = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none"></div>
           
           <div className="relative px-5 sm:px-6 md:px-8 py-5 sm:py-6 md:py-7 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6 sm:gap-7 md:gap-8 lg:gap-10 flex-1 min-w-0">
-              <div className="text-white drop-shadow-lg flex-shrink-0 flex items-center justify-center">
-                <div className={`${info.iconBg} w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-2xl shadow-xl flex items-center justify-center relative overflow-hidden`}
-                  style={{
-                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-4 md:p-5 lg:p-6">
-                    {info.icon}
-                  </div>
-                </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 
-                  id="alerta-critica-title" 
-                  className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-1.5 sm:mb-2"
-                  style={{
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)'
-                  }}
-                >
-                  {alertaActual.severidad === 'critica' || alertaActual.severidad === 'alta' 
-                    ? 'ATENCIÓN' 
-                    : 'Precaución'}
-                </h2>
-              </div>
+            <div className="flex items-center flex-1 min-w-0">
+              <h2 
+                id="alerta-critica-title" 
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight mb-1.5 sm:mb-2"
+                style={{
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)'
+                }}
+              >
+                {alertaActual.severidad === 'critica' || alertaActual.severidad === 'alta' 
+                  ? 'ATENCIÓN' 
+                  : 'Precaución'}
+              </h2>
             </div>
             <button
               onClick={cerrarModal}
@@ -222,11 +206,62 @@ const ModalAlertaCritica = () => {
           {/* Descripción principal */}
           <div className="mb-8">
             <p className="text-[#274181] text-xl sm:text-2xl md:text-3xl font-bold mb-6 leading-tight tracking-tight">
-              {alertaActual.descripcion?.replace(/Nivel alto de CO2 detectado en (Sala|sala)/gi, 'Nivel alto de gas detectado') || alertaActual.descripcion}
+              {(() => {
+                let desc = alertaActual.descripcion || '';
+                // Reemplazos para normalizar texto
+                desc = desc.replace(/Nivel alto de CO2 detectado en (Sala|sala)/gi, 'Nivel alto de gas detectado');
+                // Eliminar todas las referencias a "Rango óptimo" con diferentes variaciones
+                desc = desc.replace(/\.\s*Rango\s+óptimo:.*?%/gi, '');
+                desc = desc.replace(/\.\s*Rango\s+óptimo:.*?°/gi, '');
+                desc = desc.replace(/\.\s*Rango\s+óptimo:.*?ppm/gi, '');
+                desc = desc.replace(/Rango\s+óptimo:.*?%/gi, '');
+                desc = desc.replace(/Rango\s+óptimo:.*?°/gi, '');
+                desc = desc.replace(/Rango\s+óptimo:.*?ppm/gi, '');
+                desc = desc.replace(/\.\s*Rango\s+optimo:.*?%/gi, '');
+                desc = desc.replace(/\.\s*Rango\s+optimo:.*?°/gi, '');
+                desc = desc.replace(/\.\s*Rango\s+optimo:.*?ppm/gi, '');
+                desc = desc.replace(/Rango\s+optimo:.*?%/gi, '');
+                desc = desc.replace(/Rango\s+optimo:.*?°/gi, '');
+                desc = desc.replace(/Rango\s+optimo:.*?ppm/gi, '');
+                // Eliminar referencias a "Valor máximo seguro"
+                desc = desc.replace(/Valor\s+máximo\s+seguro:.*?ppm/gi, '');
+                desc = desc.replace(/Valor\s+máximo\s+seguro:.*?°/gi, '');
+                desc = desc.replace(/Valor\s+máximo\s+seguro:.*?%/gi, '');
+                desc = desc.replace(/\.\s*Valor\s+máximo\s+seguro:.*/gi, '');
+                // Eliminar referencias a "fuera del rango óptimo"
+                desc = desc.replace(/Valor\s+fuera\s+del\s+rango\s+óptimo/gi, '');
+                desc = desc.replace(/\.\s*Valor\s+fuera\s+del\s+rango\s+óptimo/gi, '');
+                desc = desc.replace(/fuera\s+del\s+rango\s+óptimo/gi, '');
+                desc = desc.replace(/fuera\s+del\s+rango\s+optimo/gi, '');
+                // Limpiar espacios múltiples y puntos duplicados
+                desc = desc.replace(/\s+/g, ' ');
+                desc = desc.replace(/\.\s*\./g, '.');
+                desc = desc.replace(/\.\s*$/g, '');
+                return desc.trim();
+              })()}
             </p>
             
-            {/* Valor y fecha juntos */}
+            {/* Sensor, Valor, severidad y fecha juntos */}
             <div className="space-y-3">
+              {/* Sensor */}
+              {(() => {
+                const tipoAlerta = alertaActual.tipo_alerta || '';
+                let sensor = 'Sensor';
+                if (tipoAlerta.includes('temperatura')) {
+                  sensor = '🌡️ Temperatura';
+                } else if (tipoAlerta.includes('humedad')) {
+                  sensor = '💧 Humedad';
+                } else if (tipoAlerta.includes('gas')) {
+                  sensor = '☁️ Gases Tóxicos';
+                }
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#274181] text-base sm:text-lg">Sensor:</span>
+                    <span className="font-bold text-[#274181] text-base sm:text-lg">{sensor}</span>
+                  </div>
+                );
+              })()}
+              
               {alertaActual.valor_actual && (
                 <div 
                   className="relative rounded-xl p-[2px] overflow-hidden"
@@ -256,6 +291,15 @@ const ModalAlertaCritica = () => {
                   </div>
                 </div>
               )}
+              {/* Severidad */}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[#274181] text-base sm:text-lg">Severidad:</span>
+                <span 
+                  className={`px-3 py-1 rounded-lg text-sm sm:text-base font-bold text-white ${info.badgeBg}`}
+                >
+                  {alertaActual.severidad?.toUpperCase() || 'ALTA'}
+                </span>
+              </div>
               <p className="text-[#274181]/70 text-sm sm:text-base font-semibold tracking-wide">
                 🕒 {fecha}
               </p>

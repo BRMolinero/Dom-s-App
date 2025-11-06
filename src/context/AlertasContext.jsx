@@ -11,34 +11,51 @@ export function AlertasProvider({ children }) {
   const [alertaModalVisible, setAlertaModalVisible] = useState(false);
   const [alertaActual, setAlertaActual] = useState(null);
   const [alertasMostradas, setAlertasMostradas] = useState(new Set()); // IDs de alertas ya mostradas
+  const [primeraCarga, setPrimeraCarga] = useState(true); // Bandera para saber si es la primera carga
 
   // Cargar alertas no leídas
-  const cargarAlertasNoLeidas = useCallback(async () => {
+  const cargarAlertasNoLeidas = useCallback(async (mostrarModal = false) => {
     try {
       const data = await obtenerAlertasNoLeidas();
-      const alertas = data.data || [];
+      // Filtrar alertas de tipo "sos_activado" (solo mostrar alertas de sensores fuera de rango)
+      const alertas = (data.data || []).filter(alerta => alerta.tipo_alerta !== 'sos_activado');
       
       setAlertasNoLeidas(alertas);
       
-      // Filtrar alertas críticas que no se han mostrado
+      // Si es la primera carga, marcar todas las alertas existentes como "mostradas" para que no se muestren
+      if (primeraCarga) {
+        const idsAlertasExistentes = new Set(alertas.map(a => a.id));
+        setAlertasMostradas(prev => new Set([...prev, ...idsAlertasExistentes]));
+        setPrimeraCarga(false);
+        // No mostrar modal en la primera carga
+        return;
+      }
+      
+      // Filtrar alertas críticas y de severidad alta que no se han mostrado
+      // Excluir alertas de tipo "sos_activado" (solo mostrar alertas de sensores fuera de rango)
       const criticas = alertas.filter(
         (alerta) => 
           (alerta.severidad === 'critica' || alerta.severidad === 'alta') && 
-          !alertasMostradas.has(alerta.id)
+          !alertasMostradas.has(alerta.id) &&
+          alerta.tipo_alerta !== 'sos_activado' // No mostrar alertas de mensajes SOS enviados
       );
       
       setAlertasCriticas(criticas);
       
-      // Si hay alertas críticas nuevas y no hay modal visible, mostrar la primera
-      if (criticas.length > 0 && !alertaModalVisible && alertaActual === null) {
-        setAlertaActual(criticas[0]);
-        setAlertaModalVisible(true);
-        setAlertasMostradas(prev => new Set([...prev, criticas[0].id]));
+      // Solo mostrar el modal si mostrarModal es true (llamado explícito para mostrar modal)
+      if (criticas.length > 0 && mostrarModal) {
+        // Buscar la primera alerta que no se ha mostrado
+        const nuevaAlerta = criticas.find(a => !alertasMostradas.has(a.id));
+        if (nuevaAlerta && (!alertaModalVisible || alertaActual?.id !== nuevaAlerta.id)) {
+          setAlertaActual(nuevaAlerta);
+          setAlertaModalVisible(true);
+          setAlertasMostradas(prev => new Set([...prev, nuevaAlerta.id]));
+        }
       }
     } catch (error) {
       console.error('Error al cargar alertas no leídas:', error);
     }
-  }, [alertaModalVisible, alertaActual, alertasMostradas]);
+  }, [alertaModalVisible, alertaActual, alertasMostradas, primeraCarga]);
 
   // Cargar alertas periódicamente solo si está autenticado
   useEffect(() => {
@@ -48,13 +65,17 @@ export function AlertasProvider({ children }) {
       setAlertasCriticas([]);
       setAlertaModalVisible(false);
       setAlertaActual(null);
+      setPrimeraCarga(true);
       return;
     }
     
-    cargarAlertasNoLeidas();
+    // Primera carga: no mostrar modal automáticamente
+    cargarAlertasNoLeidas(false);
     
-    // Recargar cada 15 segundos para detectar nuevas alertas
-    const interval = setInterval(cargarAlertasNoLeidas, 15000);
+    // Recargar cada 5 segundos para mantener datos actualizados
+    // NO mostrar modal automáticamente en las recargas periódicas
+    // Solo se mostrará cuando se cree una nueva alerta (con mostrarModal = true)
+    const interval = setInterval(() => cargarAlertasNoLeidas(false), 5000);
     return () => clearInterval(interval);
   }, [cargarAlertasNoLeidas, isAuthenticated]);
 
@@ -81,19 +102,10 @@ export function AlertasProvider({ children }) {
   // Cerrar modal sin marcar como leída (solo cerrar)
   const cerrarModal = useCallback(() => {
     setAlertaModalVisible(false);
-    // Si hay más alertas críticas, mostrar la siguiente
     setAlertaActual(null);
-    
-    // Si hay más alertas críticas pendientes, esperar un momento y mostrar la siguiente
-    setTimeout(() => {
-      const siguiente = alertasCriticas.find(a => a.id !== alertaActual?.id && !alertasMostradas.has(a.id));
-      if (siguiente) {
-        setAlertaActual(siguiente);
-        setAlertaModalVisible(true);
-        setAlertasMostradas(prev => new Set([...prev, siguiente.id]));
-      }
-    }, 500);
-  }, [alertasCriticas, alertaActual, alertasMostradas]);
+    // NO mostrar automáticamente la siguiente alerta al cerrar
+    // El usuario puede ver las alertas en el panel de alertas si lo desea
+  }, []);
 
   const value = {
     alertasNoLeidas,
