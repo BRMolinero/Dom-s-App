@@ -132,3 +132,24 @@ export function formatearChatIdTelegram(chatId) {
   
   return cleaned;
 }
+
+/**
+ * Enviar mensaje SOS por Telegram (para notificaciones de alertas)
+ * @param {string} mensaje - Mensaje a enviar
+ * @param {string} tipoEmergencia - Tipo de emergencia
+ * @param {number} dispositivoId - ID del dispositivo
+ * @returns {Promise<object>} Respuesta del servidor
+ */
+export async function enviarMensajeTelegramSOS(mensaje, tipoEmergencia = 'alerta_sensor', dispositivoId = 1) {
+  try {
+    const { data } = await api.post('/sos/enviar', {
+      mensaje,
+      tipo_emergencia: tipoEmergencia,
+      dispositivo_id: dispositivoId
+    });
+    return data;
+  } catch (error) {
+    console.error('Error al enviar mensaje por Telegram:', error);
+    throw new Error(error.response?.data?.error || 'No se pudo enviar el mensaje por Telegram');
+  }
+}

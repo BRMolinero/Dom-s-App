@@ -13,6 +13,7 @@ import AlertasPanel from '../../components/AlertasPanel';
 import { analizarCalidadAire } from '../../api/ai';
 import { getUltimosValoresSensor } from '../../api/sensors';
 import { crearAlerta } from '../../api/alertas';
+import { enviarMensajeTelegramSOS, obtenerConfiguracionSOS } from '../../api/sos';
 
 const AdminPanel = () => {
   const {
@@ -274,6 +275,11 @@ const AdminPanel = () => {
     
     // Verificar temperatura
     if (tipo === 'temperatura') {
+      // No crear alertas si el valor es 0 o muy bajo (< 5°C), probablemente es un error de lectura
+      if (valor <= 0 || valor < 5) {
+        return; // No crear alerta para valores 0 o muy bajos
+      }
+      
       // Verificar si está fuera del rango óptimo (20-26°C)
       if (valor < RANGOS.temperatura.min_optimo || valor > RANGOS.temperatura.max_optimo) {
         fueraDeRango = true;
@@ -300,11 +306,16 @@ const AdminPanel = () => {
     
     // Verificar humedad
     if (tipo === 'humedad') {
+      // No crear alertas si el valor es 0 o muy bajo (< 5%), probablemente es un error de lectura
+      if (valor <= 0 || valor < 5) {
+        return; // No crear alerta para valores 0 o muy bajos
+      }
+      
       // Verificar si está fuera del rango óptimo (40-60%)
       if (valor < RANGOS.humedad.min_optimo || valor > RANGOS.humedad.max_optimo) {
         fueraDeRango = true;
         
-        // Crítica: <10 o >80
+        // Crítica: <10 o >80 (pero ya validamos que no sea <= 5)
         if (valor < RANGOS.humedad.min_critico || valor > RANGOS.humedad.max_critico) {
           severidad = 'critica';
           descripcion = `🚨 Humedad CRÍTICA: ${valor.toFixed(1)}%. Valor fuera del rango crítico`;
@@ -326,6 +337,11 @@ const AdminPanel = () => {
     
     // Verificar gases (el valor del sensor viene sin dividir, comparamos dividido por 100)
     if (tipo === 'gas') {
+      // No crear alertas si el valor es 0 o muy bajo (< 80 en valor original = < 0.8 ppm), probablemente es un error de lectura
+      if (valor <= 0 || valor < 80) {
+        return; // No crear alerta para valores 0 o muy bajos
+      }
+      
       // El valor del sensor se divide por 100 para comparar con los rangos
       const valorNormalizado = valor / 100;
       
@@ -362,6 +378,32 @@ const AdminPanel = () => {
           umbral: tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`,
           severidad: severidad
         });
+        
+        // Si la severidad es media o alta, enviar notificación por Telegram
+        if (severidad === 'media' || severidad === 'alta') {
+          try {
+            // Obtener configuración SOS para verificar si tiene Telegram configurado
+            const configSOS = await obtenerConfiguracionSOS();
+            if (configSOS.telegram_id && configSOS.enviar_por_telegram !== false) {
+              // Para gases, mostrar el valor dividido por 100
+              const valorMostrar = tipo === 'gas' ? (valor / 100).toFixed(1) : valor.toFixed(1);
+              const unidad = tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : 'ppm';
+              
+              const mensajeTelegram = `⚠️ <b>ALERTA DE SENSOR</b>\n\n` +
+                                    `${descripcion}\n\n` +
+                                    `Valor actual: ${valorMostrar} ${unidad}\n` +
+                                    `Umbral: ${tipo === 'gas' ? umbralMax : `${umbralMin}-${umbralMax}`}${tipo === 'temperatura' ? '°C' : tipo === 'humedad' ? '%' : ''}\n` +
+                                    `Severidad: ${severidad.toUpperCase()}\n\n` +
+                                    `Fecha: ${new Date().toLocaleString('es-AR')}`;
+              
+              await enviarMensajeTelegramSOS(mensajeTelegram, `${tipo}_alerta`, 1);
+              console.log(`💬 Notificación Telegram enviada para alerta ${tipo} (${severidad})`);
+            }
+          } catch (error) {
+            // No fallar la creación de la alerta si falla el envío de Telegram
+            console.error(`❌ Error al enviar notificación Telegram para ${tipo}:`, error);
+          }
+        }
         
         // Marcar como alerta creada con timestamp
         setAlertasCreadas(prev => {
@@ -744,11 +786,7 @@ const AdminPanel = () => {
                   <div
                     className="h-3 rounded-full bg-gradient-to-r from-[#95CDD1] to-[#274181] transition-all duration-1000 ease-out"
                     style={{ 
-                      width: `${Math.min(Math.max(
-                        ((valoresSensor.humedad - RANGOS.humedad.min_optimo) / 
-                         (RANGOS.humedad.max_optimo - RANGOS.humedad.min_optimo)) * 100,
-                        0
-                      ), 100)}%` 
+                      width: `${Math.min(Math.max(valoresSensor.humedad, 0), 100)}%` 
                     }}
                   />
                 </div>
