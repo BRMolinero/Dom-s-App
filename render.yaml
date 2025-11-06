@@ -43,9 +43,9 @@ services:
 
     envVars:
       - key: VITE_API_URL
-        value: https://domus-back-5529.onrender.com/api
+        value: https://robot-backend-wpr4.onrender.com//api
       - key: VITE_WS_URL
-        value: wss://domus-back-5529.onrender.com
+        value: wss://https://robot-backend-wpr4.onrender.com/
 
     domains:
       - domus.humanixtech.com        # opcional, si ya apuntaste el DNS
