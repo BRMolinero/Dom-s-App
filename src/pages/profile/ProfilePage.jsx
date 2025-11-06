@@ -3,19 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { UserOutlined, MailOutlined, PhoneOutlined, EditOutlined, SaveOutlined, CloseOutlined, MessageOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { 
-  configurarTelefonoSOS, 
-  obtenerConfiguracionSOS, 
-  eliminarTelefonoSOS,
+  obtenerConfiguracionSOS,
+  configurarContactosSOS,
+  eliminarContactoSOS,
   validarTelefonoInternacional,
-  formatearTelefono
-} from '../../api/sos';
-import {
-  configurarChatIdTelegram,
-  obtenerConfiguracionTelegram,
-  eliminarChatIdTelegram,
+  formatearTelefono,
   validarChatIdTelegram,
   formatearChatIdTelegram
-} from '../../api/telegram';
+} from '../../api/sos';
 import { getProfileApi, updateProfileApi } from '../../api/auth';
 import CustomAlert from '../../components/CustomAlert';
 import LoadingMessage from '../../components/LoadingMessage';
@@ -78,9 +73,8 @@ const ProfilePage = () => {
       const profileData = await getProfileApi();
       setProfileData(profileData);
       
-      // Cargar configuración SOS y Telegram
-      await cargarConfiguracionSOS(profileData);
-      await cargarConfiguracionTelegram(profileData);
+      // Cargar configuración de contactos SOS (teléfono y Telegram)
+      await cargarConfiguracionContactos(profileData);
       
     } catch (err) {
       console.error('Error al cargar perfil del usuario:', err);
@@ -95,67 +89,37 @@ const ProfilePage = () => {
     }
   };
 
-  const cargarConfiguracionSOS = async (profileDataFromBackend = null) => {
+  const cargarConfiguracionContactos = async (profileDataFromBackend = null) => {
     try {
       const data = await obtenerConfiguracionSOS();
       const numeroBackend = data.telefono_sos || '';
+      const telegramIdBackend = data.telegram_id || '';
       
-      // Actualizar el estado del perfil con el teléfono SOS
+      // Actualizar el estado del perfil con los contactos SOS
       if (profileDataFromBackend) {
         const updatedProfileData = {
           ...profileDataFromBackend,
-          telefono_sos: numeroBackend
+          telefono_sos: numeroBackend,
+          chat_id_telegram: telegramIdBackend
         };
         setProfileData(updatedProfileData);
         
         // Actualizar también el contexto de autenticación
         const updatedUser = {
           ...user,
-          telefono_sos: numeroBackend
+          telefono_sos: numeroBackend,
+          chat_id_telegram: telegramIdBackend
         };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (err) {
-      console.error('Error al cargar configuración SOS:', err);
-      // Si falla, mantener el teléfono vacío en el perfil
+      console.error('Error al cargar configuración de contactos SOS:', err);
+      // Si falla, mantener los contactos vacíos en el perfil
       if (profileDataFromBackend) {
         const updatedProfileData = {
           ...profileDataFromBackend,
-          telefono_sos: ''
-        };
-        setProfileData(updatedProfileData);
-      }
-    }
-  };
-
-  const cargarConfiguracionTelegram = async (profileDataFromBackend = null) => {
-    try {
-      const data = await obtenerConfiguracionTelegram();
-      const chatIdBackend = data.chat_id_telegram || '';
-      
-      // Actualizar el estado del perfil con el chat_id de Telegram
-      if (profileDataFromBackend) {
-        const updatedProfileData = {
-          ...profileDataFromBackend,
-          chat_id_telegram: chatIdBackend
-        };
-        setProfileData(updatedProfileData);
-        
-        // Actualizar también el contexto de autenticación
-        const updatedUser = {
-          ...user,
-          chat_id_telegram: chatIdBackend
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      }
-    } catch (err) {
-      console.error('Error al cargar configuración de Telegram:', err);
-      // Si falla, mantener el chat_id vacío en el perfil
-      if (profileDataFromBackend) {
-        const updatedProfileData = {
-          ...profileDataFromBackend,
+          telefono_sos: '',
           chat_id_telegram: ''
         };
         setProfileData(updatedProfileData);
@@ -181,9 +145,10 @@ const ProfilePage = () => {
         await updateProfileApi({ username: formData.username });
       }
 
-      // Validar y guardar teléfono SOS
-      let telefonoFormateado = '';
-      if (formData.telefono_sos.trim()) {
+      // Validar y formatear teléfono SOS
+      let telefonoFormateado = null;
+      const tieneTelefono = formData.telefono_sos.trim() !== '';
+      if (tieneTelefono) {
         telefonoFormateado = formatearTelefono(formData.telefono_sos.trim());
         
         if (!validarTelefonoInternacional(telefonoFormateado)) {
@@ -191,17 +156,12 @@ const ProfilePage = () => {
           setLoading(false);
           return;
         }
-
-        // Guardar teléfono SOS en el backend
-        await configurarTelefonoSOS(telefonoFormateado);
-      } else {
-        // Si está vacío, eliminar del backend
-        await eliminarTelefonoSOS();
       }
 
-      // Validar y guardar chat_id de Telegram
-      let chatIdFormateado = '';
-      if (formData.chat_id_telegram.trim()) {
+      // Validar y formatear chat_id de Telegram
+      let chatIdFormateado = null;
+      const tieneTelegram = formData.chat_id_telegram.trim() !== '';
+      if (tieneTelegram) {
         chatIdFormateado = formatearChatIdTelegram(formData.chat_id_telegram.trim());
         
         if (!validarChatIdTelegram(chatIdFormateado)) {
@@ -209,19 +169,33 @@ const ProfilePage = () => {
           setLoading(false);
           return;
         }
+      }
 
-        // Guardar chat_id de Telegram en el backend
-        await configurarChatIdTelegram(chatIdFormateado);
-      } else {
-        // Si está vacío, eliminar del backend
-        await eliminarChatIdTelegram();
+      // Eliminar contactos si estaban configurados y ahora están vacíos
+      const telefonoAnterior = profileData?.telefono_sos || '';
+      const telegramAnterior = profileData?.chat_id_telegram || '';
+      
+      if (telefonoAnterior && !tieneTelefono) {
+        await eliminarContactoSOS('telefono');
+      }
+      
+      if (telegramAnterior && !tieneTelegram) {
+        await eliminarContactoSOS('telegram');
+      }
+
+      // Guardar contactos si hay al menos uno para configurar
+      if (tieneTelefono || tieneTelegram) {
+        await configurarContactosSOS(
+          tieneTelefono ? telefonoFormateado : null,
+          tieneTelegram ? chatIdFormateado : null
+        );
       }
       
       // Actualizar el estado local con los datos formateados
       setFormData(prev => ({
         ...prev,
-        telefono_sos: telefonoFormateado,
-        chat_id_telegram: chatIdFormateado
+        telefono_sos: telefonoFormateado || '',
+        chat_id_telegram: chatIdFormateado || ''
       }));
       
       // Actualizar el contexto con los nuevos datos
@@ -278,7 +252,7 @@ const ProfilePage = () => {
       setLoading(true);
       setMessage({ type: '', text: '' });
       
-      await eliminarTelefonoSOS();
+      await eliminarContactoSOS('telefono');
       
       setFormData(prev => ({
         ...prev,
@@ -324,7 +298,7 @@ const ProfilePage = () => {
       setLoading(true);
       setMessage({ type: '', text: '' });
       
-      await eliminarChatIdTelegram();
+      await eliminarContactoSOS('telegram');
       
       setFormData(prev => ({
         ...prev,

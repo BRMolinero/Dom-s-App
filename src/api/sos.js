@@ -30,16 +30,37 @@ export async function obtenerConfiguracionSOS() {
 }
 
 /**
- * Eliminar número SOS configurado
+ * Configurar contactos SOS (teléfono y/o Telegram)
+ * @param {string|null} telefono - Número de teléfono a configurar (null para no actualizar)
+ * @param {string|null} telegramId - Chat ID de Telegram a configurar (null para no actualizar)
  * @returns {Promise<object>} Respuesta del servidor
  */
-export async function eliminarTelefonoSOS() {
+export async function configurarContactosSOS(telefono = null, telegramId = null) {
   try {
-    const { data } = await api.delete('/sos/eliminar-telefono');
+    const body = {};
+    if (telefono !== null) body.telefono_sos = telefono;
+    if (telegramId !== null) body.telegram_id = telegramId;
+    
+    const { data } = await api.post('/sos/configurar-contactos', body);
     return data;
   } catch (error) {
-    console.error('Error al eliminar teléfono SOS:', error);
-    throw new Error(error.response?.data?.error || 'No se pudo eliminar el teléfono SOS');
+    console.error('Error al configurar contactos SOS:', error);
+    throw new Error(error.response?.data?.error || 'No se pudieron configurar los contactos SOS');
+  }
+}
+
+/**
+ * Eliminar contacto SOS (teléfono o Telegram)
+ * @param {string} tipo - Tipo de contacto: 'telefono' o 'telegram'
+ * @returns {Promise<object>} Respuesta del servidor
+ */
+export async function eliminarContactoSOS(tipo) {
+  try {
+    const { data } = await api.delete(`/sos/eliminar-contacto?tipo=${tipo}`);
+    return data;
+  } catch (error) {
+    console.error('Error al eliminar contacto SOS:', error);
+    throw new Error(error.response?.data?.error || 'No se pudo eliminar el contacto SOS');
   }
 }
 
@@ -78,6 +99,35 @@ export function formatearTelefono(telefono) {
       // Intentar agregar código de Argentina por defecto
       cleaned = '+549' + cleaned;
     }
+  }
+  
+  return cleaned;
+}
+
+/**
+ * Validar formato de chat_id de Telegram
+ * @param {string} chatId - Chat ID de Telegram a validar
+ * @returns {boolean} true si es válido
+ */
+export function validarChatIdTelegram(chatId) {
+  // Valida formato de chat_id de Telegram: puede ser un número (positivo o negativo) o string
+  // Ejemplos válidos: "123456789", "-123456789", "1234567890"
+  const pattern = /^-?\d{9,}$/;
+  return pattern.test(chatId);
+}
+
+/**
+ * Formatear chat_id de Telegram
+ * @param {string} chatId - Chat ID de Telegram
+ * @returns {string} Chat ID formateado
+ */
+export function formatearChatIdTelegram(chatId) {
+  // Limpiar el chat_id de espacios y caracteres especiales
+  let cleaned = chatId.trim().replace(/\s+/g, '');
+  
+  // Si es un número válido, retornarlo
+  if (/^-?\d+$/.test(cleaned)) {
+    return cleaned;
   }
   
   return cleaned;
